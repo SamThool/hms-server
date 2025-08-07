@@ -23,6 +23,10 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // ✅ Static Files & Routes
+app.get("/", (req, res) => {
+  res.send("✅ HMS Backend is running");
+});
+
 app.use("/api", routes);
 app.use("/api/images", express.static(path.join(__dirname, "public/images")));
 console.log(
