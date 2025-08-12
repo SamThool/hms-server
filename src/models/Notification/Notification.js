@@ -79,6 +79,9 @@ const notificationSchema = new Schema(
     message: {
       type: String,
     },
+    discountComment: {
+      type: String,
+    },
 
     // --- Financials ---
     pendingAmount: {
@@ -102,7 +105,11 @@ const notificationSchema = new Schema(
       type: Boolean,
       default: false,
     },
-
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
     isNotificationForDiscount: {
       type: Boolean,
       default: false,

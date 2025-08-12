@@ -67,8 +67,8 @@ exports.createDiscountNote = async (req, res) => {
 
 exports.getDiscountNote = async (req, res) => {
   try {
-    console.log("reached");
-    console.log("discountnote id", req.params.id);
+    // console.log("reached");
+    // console.log("discountnote id", req.params.id);
 
     const { id } = req.params;
     const notes = await OpdDiscountNote.findById(id);

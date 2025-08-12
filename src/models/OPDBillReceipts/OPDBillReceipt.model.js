@@ -24,10 +24,10 @@ const OPDBillReceiptSchema = new mongoose.Schema(
       enum: ["pending", "approved"],
       default: "approved",
     },
-    discountNoteId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "OPD_discount_note",
-      default: null,
+    notifications: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Notification",
+      default: [],
     },
     paidAmount: { type: Number, default: 0 },
     pendingAmount: { type: Number, default: 0 },

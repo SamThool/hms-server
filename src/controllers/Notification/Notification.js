@@ -64,7 +64,6 @@ const getNotifications = async (req, res) => {
 const getNotificationsPatient = async (req, res) => {
   try {
     const { id } = req.params;
-    consolw.log("IDDD", id);
     if (!id) {
       return res.status(400).json({ message: "Patient ID is required" });
     }
@@ -89,7 +88,7 @@ const updateNotificationStatus = async (req, res) => {
 
     const updatedNotification = await Notification.findByIdAndUpdate(
       id,
-      { $set: { isRead: true, isApproved: true } },
+      { $set: { isRead: true, isApproved: true, status: req.body.status } },
       { new: true }
     );
 

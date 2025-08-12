@@ -8,6 +8,8 @@ const OpdPatientModel = require("../../models/appointment-confirm/opdPatient.mod
 const PatientAppointment = require("../../models/Masters/patientAppointment.model");
 const { AppointmentSchedulingModel } = require("../../models");
 const { emitPatientStatusUpdate } = require("../../utils/socket");
+const { default: mongoose } = require("mongoose");
+const Notification = require("../../models/Notification/Notification");
 
 const incrementOPDReceiptNo = async () => {
   try {
@@ -75,7 +77,7 @@ const getLatestTokenNumberAndAssignToPatient = async (
 
 const createOPDReceipt = async (req, res) => {
   try {
-    const { opdId, patientId } = req.body;
+    const { opdId, patientId, notification } = req.body;
 
     // Validate OPD and Patient existence
     const opd = await OpdPatientModel.findById(opdId);
@@ -86,6 +88,14 @@ const createOPDReceipt = async (req, res) => {
       return res
         .status(404)
         .json({ error: "Patient Appointment not found in createOPDReceipt" });
+
+    if (Array.isArray(notification)) {
+      req.body.notifications = notification.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+    } else {
+      req.body.notifications = [];
+    }
 
     // Fetch or initialize receipt number
     let latestReceipt = await OPDReceiptNoModel.findOne();
@@ -98,7 +108,7 @@ const createOPDReceipt = async (req, res) => {
     const loggedInUserId = req.user.adminId;
     const loggedInUserData = await AdminModel.findOne({ _id: loggedInUserId });
     // console.log(loggedInUserData);
-    console.log("🧾 loggedInUserData:", loggedInUserData);
+    // console.log("🧾 loggedInUserData:", loggedInUserData);
 
     if (Object.keys(loggedInUserData).length > 0) {
       (req.body.personWhoCreatedThisBillName = loggedInUserData.name || ""),
@@ -206,13 +216,29 @@ const createOPDReceipt = async (req, res) => {
 
     // Save the updated schedule back to the database
     await ScheduleOfDoctor.save();
-    console.log("Schedule updated successfully", newReceipt);
+    // console.log("Schedule updated successfully", newReceipt);
     if (
       newReceipt?.paymentMode?.toLowerCase()?.trim() === "cash" ||
       "charity"
     ) {
       emitPatientStatusUpdate(newReceipt);
     }
+
+    console.log("-------------------------------------------------", req.body);
+
+    if (req?.body?.services?.[0]?.serviceCode) {
+      const id = req.body.services[0].serviceCode;
+      try {
+        await Notification.findByIdAndUpdate(id, { status: "PAID" });
+      } catch (error) {
+        console.warn(
+          `Failed to update notification ${id} to PAID:`,
+          error.message
+        );
+        // Continue without interrupting the flow
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: "Receipt Generated Successfully",
