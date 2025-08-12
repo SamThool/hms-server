@@ -4,6 +4,7 @@ const {
 } = require("../../models/Masters/serviceRateNew.model");
 
 const mongoose = require("mongoose");
+const { generateUniqueId, getNextSequenceNumber } = require("../../utils/generateUniqueId");
 
 // Utility function for validating required fields
 const validateFields = (fields) => {
@@ -179,10 +180,15 @@ const updateServiceRates = async (req, res) => {
       // ✅ Save the filter
       existingService.filter = filter;
     } else {
+      // Generate unique ID for new service
+      const existingCodes = targetArray.map(service => service.code).filter(code => code);
+      const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name);
+      const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber);
+      
       const newService = {
         serviceIdOfRelatedMaster,
         rate: rate || 0,
-        code: code || "",
+        code: uniqueId, // Use generated unique ID instead of empty string
         isValid: true,
         filter, // ✅ Save the filter here
         rateCreatedAt: Date.now(),
@@ -381,10 +387,15 @@ const updateMassServiceRateThroughPathology = async (req, res) => {
         updatedIds.push(serviceIdOfRelatedMaster);
       } else {
         // ✅ Not existing → create new
+        // Generate unique ID for new service
+        const existingCodes = targetArray.map(service => service.code).filter(code => code);
+        const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name);
+        const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber);
+        
         const newService = {
           serviceIdOfRelatedMaster,
           rate: rate || 0,
-          code: code || "",
+          code: uniqueId, // Use generated unique ID instead of empty string
           isValid: true,
           filter,
           rateCreatedAt: Date.now(),
@@ -394,7 +405,7 @@ const updateMassServiceRateThroughPathology = async (req, res) => {
         };
 
         targetArray.push(newService);
-        console.log(`Created new entry for id ${serviceIdOfRelatedMaster}`);
+        console.log(`Created new entry for id ${serviceIdOfRelatedMaster} with unique code ${uniqueId}`);
         createdIds.push(serviceIdOfRelatedMaster);
       }
     });
@@ -471,19 +482,25 @@ const fetchServiceCodeAndRatesAccordingToServiceListItemAndFilter = async (
       });
     }
 
-    // Initialize empty objects for rateList and codeList
+    // Initialize empty objects for rateList, codeList, and idList
     const rateList = {};
     const codeList = {};
+    const idList = {};
 
-    // Populate rateList and codeList
-    selectedServiceArray.forEach((service) => {
+    // Populate rateList, codeList, and idList
+    selectedServiceArray.forEach((service, index) => {
       const serviceId = service.serviceIdOfRelatedMaster;
       rateList[serviceId] = service.rate;
       codeList[serviceId] = service.code;
+      
+      // Generate service ID for display (auto-generated unique ID)
+      // Always generate a sequential ID based on the index, regardless of whether service.code exists
+      const serviceDisplayId = generateUniqueId(serviceRateListItem.name, index + 1);
+      idList[serviceId] = serviceDisplayId;
     });
 
-    // Return the response with rateList and codeList
-    return res.status(200).json({ success: true, rateList, codeList });
+    // Return the response with rateList, codeList, and idList
+    return res.status(200).json({ success: true, rateList, codeList, idList });
   } catch (error) {
     console.error("Error fetching service code and rates:", error);
     return res
@@ -915,6 +932,67 @@ const getApplicableServiceRateListForPatient = async (req, res) => {
   return res.status(200).json({ data });
 };
 
+// Generate unique IDs for existing services that don't have codes
+const generateUniqueIdsForExistingServices = async (req, res) => {
+  const { serviceRateListItemId } = req.params;
+
+  try {
+    const serviceRateListItem = await ServiceRateList.findById(serviceRateListItemId);
+    
+    if (!serviceRateListItem) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Service rate list item not found" 
+      });
+    }
+
+    const filters = ['pathology', 'radiology', 'opdPackage', 'otherServices', 'opdConsultant', 'otherDiagnostics', 'pathologyProfiles'];
+    let updatedCount = 0;
+
+    for (const filter of filters) {
+      const targetArray = serviceRateListItem[filter];
+      if (!targetArray || !Array.isArray(targetArray)) continue;
+
+      // Get existing codes for this filter
+      const existingCodes = targetArray.map(service => service.code).filter(code => code);
+      
+      for (let i = 0; i < targetArray.length; i++) {
+        const service = targetArray[i];
+        
+        // Only generate unique ID if service doesn't have a code or has empty code
+        if (!service.code || service.code.trim() === '') {
+          const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name);
+          const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber);
+          
+          service.code = uniqueId;
+          service.codeCreatedAt = Date.now();
+          service.codeUpdatedAt = Date.now();
+          service.filter = filter;
+          
+          existingCodes.push(uniqueId);
+          updatedCount++;
+        }
+      }
+    }
+
+    await serviceRateListItem.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Generated unique IDs for ${updatedCount} services`,
+      updatedCount
+    });
+
+  } catch (error) {
+    console.error("Error generating unique IDs for existing services:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createNewService,
   editService,
@@ -928,4 +1006,5 @@ module.exports = {
   fetchValidServicesOfRatelist,
   getCreatedAndUpdatedHistoryOfServiceRate,
   getApplicableServiceRateListForPatient,
+  generateUniqueIdsForExistingServices,
 };

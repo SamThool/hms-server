@@ -12,6 +12,7 @@ const {
   editService,
   getCreatedAndUpdatedHistoryOfServiceRate,
   getApplicableServiceRateListForPatient,
+  generateUniqueIdsForExistingServices,
 } = require("../../controllers/Masters/serviceRateNew.controller");
 const { handleToken } = require("../../utils/handleToken");
 
@@ -59,6 +60,12 @@ serviceRateRouterNew.get(
 serviceRateRouterNew.get(
   "/getApplicableServiceListForPatient/:payeeCategory/:patientPayee/:tpa",
   getApplicableServiceRateListForPatient
+);
+
+serviceRateRouterNew.post(
+  "/generateUniqueIds/:serviceRateListItemId",
+  handleToken,
+  generateUniqueIdsForExistingServices
 );
 
 module.exports = serviceRateRouterNew;

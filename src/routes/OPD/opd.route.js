@@ -301,7 +301,6 @@ opdRouter.delete(
   opdController.deleteHistoryFormHistoryController
 );
 
-
 opdRouter.delete(
   "/other-history/inner-objective-data/:id",
   handleToken,
@@ -398,7 +397,11 @@ opdRouter.put(
 
 opdRouter.get("/life-style", handleToken, opdController.getAllLifeStyle);
 opdRouter.post("/life-style", handleToken, opdController.createLifeStyle);
-opdRouter.delete("/life-style/personal-history/delete:id", handleToken, opdController.deletelifeStylePersonalHistory);
+opdRouter.delete(
+  "/life-style/personal-history/delete:id",
+  handleToken,
+  opdController.deletelifeStylePersonalHistory
+);
 opdRouter.put(
   "/life-style/:id",
   handleToken,
@@ -431,8 +434,11 @@ opdRouter.get(
   handleToken,
   opdController.GetpersonalHistorybypatientId
 );
-opdRouter.post("/life-style/personal-history", handleToken, opdController.addPersnalHistory);
-
+opdRouter.post(
+  "/life-style/personal-history",
+  handleToken,
+  opdController.addPersnalHistory
+);
 
 opdRouter.put(
   "/life-style-lastLayer/:id",
@@ -875,12 +881,11 @@ opdRouter.get(
   handleToken,
   opdController.GetMostUsedProcedure
 );
-// advice 
+// advice
 opdRouter.post("/advice", handleToken, opdController.createAdvice);
 opdRouter.get("/advice", handleToken, opdController.getAllAdvice);
 opdRouter.put("/advice/delete", handleToken, opdController.deleteAdvice);
 opdRouter.put("/advice/:id", handleToken, opdController.editAdvice);
-
 
 // Instruction
 opdRouter.get("/instruction", handleToken, opdController.getAllInstruction);
@@ -1208,7 +1213,6 @@ opdRouter.put(
   opdController.addMostNestedObjectiveForLocal
 );
 
-
 opdRouter.put(
   "/systemic-examination/lastLayer/:id",
   handleToken,
@@ -1392,18 +1396,27 @@ opdRouter.get(
   handleToken,
   opdController.getAllPatientData
 );
+
 opdRouter.get(
   "/all-patient-details-to-print/:patientId/:consultantId",
   handleToken,
   opdController.getAllPatientdataToPrint
 );
 
+opdRouter.get(
+  "/history-by-uhid/:uhid",
+  handleToken,
+  opdController.getPatientsHistoryByUHID
+);
+
 opdRouter.post("/opdbilling", handleToken, opdController.createOPDBilling);
+
 opdRouter.get(
   "/opdbilling/:patientId/:opdId",
   handleToken,
   opdController.getOPDBilling
 );
+
 opdRouter.get(
   "/opdbilling/most-used-service/:departmentId/:patientPayeeId",
   handleToken,

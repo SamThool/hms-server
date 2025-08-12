@@ -83,6 +83,7 @@ const opdRegSchemaValidation = require("../../validations/OPD/opd.validation");
 
 const httpStatus = require("http-status");
 const mongoose = require("mongoose");
+const opdPatientModel = require("../../models/appointment-confirm/opdPatient.model");
 
 let serialCounter = 1;
 
@@ -690,12 +691,41 @@ const deleteFamilyHistoryProblems = async (req, res) => {
     });
   }
 };
+
 const getAllMedicalProblem = async (req, res) => {
   try {
     const medicalproblem = await MedicalProblemModel.find({ delete: false });
     res.status(httpStatus.OK).json({ data: medicalproblem });
   } catch (error) {
     console.error(error);
+    res
+      .status(httpStatus.INTERNAL_SERVER_ERROR)
+      .json({ error: "Internal server error" });
+  }
+};
+
+const getPatientsHistoryByUHID = async (req, res) => {
+  try {
+    const { uhid } = req.params;
+
+    if (!uhid) {
+      return res
+        .status(httpStatus.BAD_REQUEST)
+        .json({ error: "UHID is required" });
+    }
+
+    // Find patients where data.uhid matches the given uhid
+    const patients = await opdPatientModel.find({ uhid });
+
+    if (!patients.length) {
+      return res
+        .status(httpStatus.NOT_FOUND)
+        .json({ error: "No patients found with this UHID" });
+    }
+
+    res.status(httpStatus.OK).json({ data: patients });
+  } catch (error) {
+    console.error("Error fetching patients by UHID:", error);
     res
       .status(httpStatus.INTERNAL_SERVER_ERROR)
       .json({ error: "Internal server error" });
@@ -9137,6 +9167,7 @@ module.exports = {
 
   getAllPatientData,
   getAllPatientdataToPrint,
+  getPatientsHistoryByUHID,
 
   createOPDBilling,
   getOPDBilling,

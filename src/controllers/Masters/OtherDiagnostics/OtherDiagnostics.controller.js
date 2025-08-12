@@ -3,33 +3,41 @@ const OtherDiagnosticsModel = require("../../../models/Masters/OtherDiagnostics/
 
 // ✅ Fetch all diagnostics (excluding deleted ones)
 const fetchAllDiagnostics = async (req, res) => {
-  try {
-    const diagnostics = await OtherDiagnosticsModel.find({ delete: false });
+    try {
+      const diagnostics = await OtherDiagnosticsModel.find({ delete: false });
+  
 
-    if (!diagnostics.length) {
-      return res
-        .status(httpStatus.NOT_FOUND)
-        .json({ msg: "No diagnostics found." });
-    }
-
-    const formattedData = diagnostics.map((item) => ({
-      ...item._doc,
-      description: item._doc.description.length
-        ? item._doc.description[0]
-        : null,
-    }));
-
-    return res.status(httpStatus.OK).json({
-      msg: "Diagnostics retrieved successfully",
-      diagnostics: formattedData,
-    });
-  } catch (error) {
-    console.error("Error fetching diagnostics:", error);
-    return res
-      .status(httpStatus.INTERNAL_SERVER_ERROR)
-      .json({ msg: "Server Error", error });
-  }
-};
+  
+      if (!diagnostics.length) {
+        return res
+          .status(httpStatus.NOT_FOUND)
+          .json({ msg: "No diagnostics found." });
+      }
+  
+      const formattedData = diagnostics.map((item) => {
+        // Add a null check for item._doc.description before accessing .length
+        const description =
+          item._doc.description && item._doc.description.length
+            ? item._doc.description[0]
+            : null;
+  
+        return {
+          ...item._doc,
+          description: description,
+        };
+      });
+  
+      return res.status(httpStatus.OK).json({
+        msg: "Diagnostics retrieved successfully",
+        diagnostics: formattedData,
+      });
+    } catch (error) {
+      console.error("Error fetching diagnostics:", error);
+      return res
+        .status(httpStatus.INTERNAL_SERVER_ERROR)
+        .json({ msg: "Server Error", error });
+    }
+  };
 
 // ✅ Add a new diagnostic entry
 const createDiagnostic = async (req, res) => {

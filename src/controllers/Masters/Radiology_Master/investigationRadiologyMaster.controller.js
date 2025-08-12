@@ -2,33 +2,33 @@ const httpStatus = require('http-status')
 const { InvestigationRadiologyMasterModel } = require('../../../models')
 
 const getAllInvestigation = async (req, res) => {
-  try {
-    const inevestigation = await InvestigationRadiologyMasterModel.find({
-      delete: false
-    }).populate('subDepartment')
-    if (!inevestigation) {
-      return res.status(500).json({ err: 'Error in finding inevestigation' })
-    }
-    const data = []
-    inevestigation.forEach(element => {
-      // console.log(element._doc.description);
-      data.push({
-        ...element._doc,
-        description:
-          element._doc.description.length === 0
-            ? null
-            : element._doc.description[0]
-      })
-    })
-    return res.status(httpStatus.OK).json({
-      msg: 'All inevestigation found successfully',
-      investigation: data
-    })
-  } catch (error) {
-    // console.log(error);
-    res.status(500).json({ err: 'Server Error', error })
+    try {
+      const investigations = await InvestigationRadiologyMasterModel.find({
+        delete: false
+      }).populate('subDepartment');
+   
+      // Using map for a cleaner transformation
+      const formattedData = investigations.map(item => {
+        const descriptionValue =
+          item.description && item.description.length > 0
+            ? item.description[0]
+            : null;
+       
+        return {
+          ...item._doc,
+          description: descriptionValue
+        };
+      });
+  
+      return res.status(httpStatus.OK).json({
+        msg: 'All investigation found successfully',
+        investigation: formattedData
+      });
+    } catch (error) {
+      console.error('Error in getAllInvestigation:', error);
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ err: 'Server Error', error: error.message });
+    }
   }
-}
 
 const addInvestigation = async (req, res) => {
   try {
