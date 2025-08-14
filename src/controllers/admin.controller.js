@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
+const PatientDetails = require("../models/Masters/patientAppointment.model");
 const jwt = require("jsonwebtoken");
-const { ConsultantModel } = require("../models");
+const OpdPatientModel = require("../models/appointment-confirm/opdPatient.model");
+const { ConsultantModel, OPDReceiptModel } = require("../models");
 const { EmployeeModel } = require("../models");
 const { AdminModel } = require("../models");
 const { CompanySetupModel } = require("../models");
@@ -356,6 +358,285 @@ const getSystemRightsById = async (req, res) => {
   }
 };
 
+// const getDashboardInfo = async (req, res) => {
+//   try {
+//     const { fromDate, toDate, selectedMonth } = req.body;
+
+//     // ---- Get today's stats from PatientDetails ----
+//     const todayStr = new Date().toISOString().split("T")[0];
+
+//     const noOfNewAppointmentsToday = await PatientDetails.countDocuments({
+//       date: todayStr,
+//       consultationType: "New",
+//     });
+
+//     const noOfFollowUpAppointmentsToday = await PatientDetails.countDocuments({
+//       date: todayStr,
+//       consultationType: "Follow-Up",
+//     });
+
+//     // ---- Prepare date list for chart from OpdPatientModel ----
+//     let dateStrings = [];
+
+//     if (selectedMonth) {
+//       const [year, month] = selectedMonth.split("-");
+//       const daysInMonth = new Date(year, month, 0).getDate();
+//       for (let day = 1; day <= daysInMonth; day++) {
+//         const date = new Date(year, month - 1, day);
+//         dateStrings.push(date.toISOString().split("T")[0]);
+//       }
+//     } else if (fromDate && toDate) {
+//       let currentDate = new Date(fromDate);
+//       const endDate = new Date(toDate);
+//       while (currentDate <= endDate) {
+//         dateStrings.push(currentDate.toISOString().split("T")[0]);
+//         currentDate.setDate(currentDate.getDate() + 1);
+//       }
+//     } else {
+//       const today = new Date();
+//       for (let i = 0; i < 10; i++) {
+//         const date = new Date(today);
+//         date.setDate(today.getDate() - i);
+//         dateStrings.push(date.toISOString().split("T")[0]);
+//       }
+//     }
+
+//     const uData = []; // follow-up
+//     const pData = []; // new
+//     const xLabels = [];
+
+//     for (let i = 0; i < dateStrings.length; i++) {
+//       const dateStr = dateStrings[i];
+
+//       const followUpCount = await OpdPatientModel.countDocuments({
+//         registrationDate: dateStr,
+//         patientType: "Follow-Up",
+//       });
+
+//       const newCount = await OpdPatientModel.countDocuments({
+//         registrationDate: dateStr,
+//         patientType: "New",
+//       });
+
+//       uData.push(followUpCount);
+//       pData.push(newCount);
+
+//       if (!selectedMonth && !fromDate && !toDate) {
+//         if (i === 0) xLabels.push("Today");
+//         else if (i === 1) xLabels.push("Yesterday");
+//         else {
+//           const labelDate = new Date(dateStr);
+//           xLabels.push(
+//             labelDate.toLocaleDateString("en-GB", {
+//               day: "2-digit",
+//               month: "short",
+//             })
+//           );
+//         }
+//       } else if (selectedMonth) {
+//         // Only push day number if month filter is active
+//         const labelDate = new Date(dateStr);
+//         xLabels.push(labelDate.getDate().toString().padStart(2, "0"));
+//       } else {
+//         const labelDate = new Date(dateStr);
+//         xLabels.push(
+//           labelDate.toLocaleDateString("en-GB", {
+//             day: "2-digit",
+//             month: "short",
+//           })
+//         );
+//       }
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "success",
+//       data: {
+//         today: {
+//           newAppointments: noOfNewAppointmentsToday,
+//           followUpAppointments: noOfFollowUpAppointmentsToday,
+//         },
+//         chart: {
+//           uData: uData.reverse(),
+//           pData: pData.reverse(),
+//           xLabels: xLabels.reverse(),
+//         },
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error in getDashboardInfo:", error);
+//     return res.status(500).json({
+//       success: false,
+//       error: "Internal server error",
+//       details: error.message,
+//     });
+//   }
+// };
+
+const getDashboardInfo = async (req, res) => {
+  try {
+    const { selectedMonth, fromDate, toDate } = req.body;
+
+    let startDate,
+      endDate,
+      dateList = [],
+      labelList = [];
+    const today = new Date();
+
+    // 1. If month is given
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0);
+
+      for (
+        let d = new Date(startDate);
+        d <= endDate;
+        d.setDate(d.getDate() + 1)
+      ) {
+        dateList.push(d.toISOString().split("T")[0]);
+        labelList.push(d.getDate().toString()); // day only
+      }
+
+      // 2. If custom date range
+    } else if (fromDate && toDate) {
+      startDate = new Date(fromDate);
+      endDate = new Date(toDate);
+
+      for (
+        let d = new Date(startDate);
+        d <= endDate;
+        d.setDate(d.getDate() + 1)
+      ) {
+        dateList.push(d.toISOString().split("T")[0]);
+        labelList.push(
+          d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+        );
+      }
+
+      // 3. Last 10 days
+    } else {
+      for (let i = 0; i < 10; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        dateList.push(d.toISOString().split("T")[0]);
+
+        if (i === 0) labelList.push("Today");
+        else if (i === 1) labelList.push("Yesterday");
+        else
+          labelList.push(
+            d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+          );
+      }
+      dateList.reverse();
+      labelList.reverse();
+    }
+
+    // ---------------------
+    // 1️⃣ Appointments Chart (OpdPatientModel)
+    // ---------------------
+    const uData = []; // Follow-Up
+    const pData = []; // New
+
+    for (const dateStr of dateList) {
+      const followUpCount = await OpdPatientModel.countDocuments({
+        registrationDate: dateStr,
+        patientType: "Follow-Up",
+      });
+      const newCount = await OpdPatientModel.countDocuments({
+        registrationDate: dateStr,
+        patientType: "New",
+      });
+
+      uData.push(followUpCount);
+      pData.push(newCount);
+    }
+
+    // ---------------------
+    // 2️⃣ Cash vs Online Chart (OPDReceiptModel)
+    // ---------------------
+    const cashOnlineData = await OPDReceiptModel.aggregate([
+      {
+        $match: {
+          updatedAt: {
+            $gte: new Date(dateList[0]),
+            $lte: new Date(dateList[dateList.length - 1] + "T23:59:59.999Z"),
+          },
+        },
+      },
+      {
+        $project: {
+          date: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+          isCash: { $eq: ["$paymentMode", "Cash"] },
+          paidAmount: 1,
+        },
+      },
+      {
+        $group: {
+          _id: { date: "$date", isCash: "$isCash" },
+          total: { $sum: "$paidAmount" },
+        },
+      },
+    ]);
+
+    const cashData = [];
+    const onlineData = [];
+
+    dateList.forEach((dateStr) => {
+      const cashEntry = cashOnlineData.find(
+        (e) => e._id.date === dateStr && e._id.isCash
+      );
+      const onlineEntry = cashOnlineData.find(
+        (e) => e._id.date === dateStr && !e._id.isCash
+      );
+
+      cashData.push(cashEntry ? cashEntry.total : 0);
+      onlineData.push(onlineEntry ? onlineEntry.total : 0);
+    });
+
+    // ---------------------
+    // 3️⃣ Total Appointments Today (PatientDetails)
+    // ---------------------
+    const todayStr = new Date().toISOString().split("T")[0];
+    const noOfNewAppointmentsToday = await PatientDetails.countDocuments({
+      date: todayStr,
+      consultationType: "New",
+    });
+    const noOfFollowUpAppointmentsToday = await PatientDetails.countDocuments({
+      date: todayStr,
+      consultationType: "Follow-Up",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "success",
+      data: {
+        today: {
+          newAppointments: noOfNewAppointmentsToday,
+          followUpAppointments: noOfFollowUpAppointmentsToday,
+        },
+        appointmentChart: {
+          uData,
+          pData,
+          xLabels: labelList,
+        },
+        cashOnlineChart: {
+          cashData,
+          onlineData,
+          xLabels: labelList,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error in getDashboardInfo:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      details: error.message,
+    });
+  }
+};
+
 module.exports = {
   registerAdmin,
   loginAdmin,
@@ -369,4 +650,5 @@ module.exports = {
   fetchUserSuspensionStatus,
   updateUserSuspensionStatus,
   getSystemRightsById,
+  getDashboardInfo,
 };
