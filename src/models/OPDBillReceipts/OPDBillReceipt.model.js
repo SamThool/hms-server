@@ -13,6 +13,7 @@ const OPDBillReceiptSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Patient_Appointment",
     },
+    department: { type: String, default: "" },
     services: { type: Array },
     charges: { type: Number, default: 0 },
     transactionId: { type: String, default: null },
