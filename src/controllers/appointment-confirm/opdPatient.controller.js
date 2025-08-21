@@ -665,11 +665,11 @@ const getDailyConfirmedAppointmentConsultantWise = async (req, res) => {
 
     // Fetch records where consultantId matches & patientId.date is today
     const appointments = await OpdPatientModel.find({
-      // $or: [
-      //   { consultantId: id, isPatientPaidTheBill: true },
-      //   { payeeCategory: "Insurance" },
-      // ],
-      consultantId: id,
+      $or: [
+        { consultantId: id, isPatientPaidTheBill: true },
+        { payeeCategory: "Insurance" },
+      ],
+      // consultantId: id,
     })
       .populate("patientId")
       .populate({

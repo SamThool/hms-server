@@ -358,121 +358,6 @@ const getSystemRightsById = async (req, res) => {
   }
 };
 
-// const getDashboardInfo = async (req, res) => {
-//   try {
-//     const { fromDate, toDate, selectedMonth } = req.body;
-
-//     // ---- Get today's stats from PatientDetails ----
-//     const todayStr = new Date().toISOString().split("T")[0];
-
-//     const noOfNewAppointmentsToday = await PatientDetails.countDocuments({
-//       date: todayStr,
-//       consultationType: "New",
-//     });
-
-//     const noOfFollowUpAppointmentsToday = await PatientDetails.countDocuments({
-//       date: todayStr,
-//       consultationType: "Follow-Up",
-//     });
-
-//     // ---- Prepare date list for chart from OpdPatientModel ----
-//     let dateStrings = [];
-
-//     if (selectedMonth) {
-//       const [year, month] = selectedMonth.split("-");
-//       const daysInMonth = new Date(year, month, 0).getDate();
-//       for (let day = 1; day <= daysInMonth; day++) {
-//         const date = new Date(year, month - 1, day);
-//         dateStrings.push(date.toISOString().split("T")[0]);
-//       }
-//     } else if (fromDate && toDate) {
-//       let currentDate = new Date(fromDate);
-//       const endDate = new Date(toDate);
-//       while (currentDate <= endDate) {
-//         dateStrings.push(currentDate.toISOString().split("T")[0]);
-//         currentDate.setDate(currentDate.getDate() + 1);
-//       }
-//     } else {
-//       const today = new Date();
-//       for (let i = 0; i < 10; i++) {
-//         const date = new Date(today);
-//         date.setDate(today.getDate() - i);
-//         dateStrings.push(date.toISOString().split("T")[0]);
-//       }
-//     }
-
-//     const uData = []; // follow-up
-//     const pData = []; // new
-//     const xLabels = [];
-
-//     for (let i = 0; i < dateStrings.length; i++) {
-//       const dateStr = dateStrings[i];
-
-//       const followUpCount = await OpdPatientModel.countDocuments({
-//         registrationDate: dateStr,
-//         patientType: "Follow-Up",
-//       });
-
-//       const newCount = await OpdPatientModel.countDocuments({
-//         registrationDate: dateStr,
-//         patientType: "New",
-//       });
-
-//       uData.push(followUpCount);
-//       pData.push(newCount);
-
-//       if (!selectedMonth && !fromDate && !toDate) {
-//         if (i === 0) xLabels.push("Today");
-//         else if (i === 1) xLabels.push("Yesterday");
-//         else {
-//           const labelDate = new Date(dateStr);
-//           xLabels.push(
-//             labelDate.toLocaleDateString("en-GB", {
-//               day: "2-digit",
-//               month: "short",
-//             })
-//           );
-//         }
-//       } else if (selectedMonth) {
-//         // Only push day number if month filter is active
-//         const labelDate = new Date(dateStr);
-//         xLabels.push(labelDate.getDate().toString().padStart(2, "0"));
-//       } else {
-//         const labelDate = new Date(dateStr);
-//         xLabels.push(
-//           labelDate.toLocaleDateString("en-GB", {
-//             day: "2-digit",
-//             month: "short",
-//           })
-//         );
-//       }
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "success",
-//       data: {
-//         today: {
-//           newAppointments: noOfNewAppointmentsToday,
-//           followUpAppointments: noOfFollowUpAppointmentsToday,
-//         },
-//         chart: {
-//           uData: uData.reverse(),
-//           pData: pData.reverse(),
-//           xLabels: xLabels.reverse(),
-//         },
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Error in getDashboardInfo:", error);
-//     return res.status(500).json({
-//       success: false,
-//       error: "Internal server error",
-//       details: error.message,
-//     });
-//   }
-// };
-
 const getDashboardInfo = async (req, res) => {
   try {
     const { selectedMonth, fromDate, toDate } = req.body;
@@ -594,17 +479,86 @@ const getDashboardInfo = async (req, res) => {
       onlineData.push(onlineEntry ? onlineEntry.total : 0);
     });
 
+    // Appointment mode counts (Walk In, Telephonic, Online)
+
+    const appointmentModeCounts = await PatientDetails.aggregate([
+      {
+        $match: {
+          appointmentMode: { $in: ["Walk In", "Telephonic", "Online"] },
+          date: { $in: dateList }, // <-- uses your pre-built dateList
+        },
+      },
+      {
+        $group: {
+          _id: "$appointmentMode",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Transform into an object for easier frontend use
+    const appointmentModeSummary = {
+      walkIn: 0,
+      telephonic: 0,
+      online: 0,
+    };
+
+    appointmentModeCounts.forEach((item) => {
+      if (item._id === "Walk In") appointmentModeSummary.walkIn = item.count;
+      if (item._id === "Telephonic")
+        appointmentModeSummary.telephonic = item.count;
+      if (item._id === "Online") appointmentModeSummary.online = item.count;
+    });
+
     // ---------------------
-    // 3️⃣ Total Appointments Today (PatientDetails)
+    // 3️⃣ Total Appointments & Payments Today
     // ---------------------
     const todayStr = new Date().toISOString().split("T")[0];
-    const noOfNewAppointmentsToday = await PatientDetails.countDocuments({
-      date: todayStr,
-      consultationType: "New",
+    const [noOfNewAppointmentsToday, noOfFollowUpAppointmentsToday] =
+      await Promise.all([
+        PatientDetails.countDocuments({
+          date: todayStr,
+          consultationType: "New",
+        }),
+        PatientDetails.countDocuments({
+          date: todayStr,
+          consultationType: "Follow-Up",
+        }),
+      ]);
+
+    // Payments today
+    const todayPayments = await OPDReceiptModel.aggregate([
+      {
+        $match: {
+          updatedAt: {
+            $gte: new Date(todayStr),
+            $lte: new Date(todayStr + "T23:59:59.999Z"),
+          },
+        },
+      },
+      {
+        $project: {
+          isCash: { $eq: ["$paymentMode", "Cash"] },
+          paidAmount: 1,
+        },
+      },
+      {
+        $group: {
+          _id: "$isCash",
+          total: { $sum: "$paidAmount" },
+        },
+      },
+    ]);
+
+    const totalRegistrationsToday = await OpdPatientModel.countDocuments({
+      registrationDate: todayStr,
     });
-    const noOfFollowUpAppointmentsToday = await PatientDetails.countDocuments({
-      date: todayStr,
-      consultationType: "Follow-Up",
+
+    let totalCashToday = 0;
+    let totalOnlineToday = 0;
+    todayPayments.forEach((entry) => {
+      if (entry._id) totalCashToday = entry.total;
+      else totalOnlineToday = entry.total;
     });
 
     return res.status(200).json({
@@ -614,6 +568,9 @@ const getDashboardInfo = async (req, res) => {
         today: {
           newAppointments: noOfNewAppointmentsToday,
           followUpAppointments: noOfFollowUpAppointmentsToday,
+          totalCashToday: totalCashToday,
+          totalOnlineToday: totalOnlineToday,
+          totalRegistrationsToday: totalRegistrationsToday,
         },
         appointmentChart: {
           uData,
@@ -625,6 +582,7 @@ const getDashboardInfo = async (req, res) => {
           onlineData,
           xLabels: labelList,
         },
+        appointmentModeSummary: appointmentModeSummary,
       },
     });
   } catch (error) {

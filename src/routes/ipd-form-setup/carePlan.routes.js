@@ -1,50 +1,38 @@
-const express=require("express");
-const CarePlanRouter=express.Router();
+const express = require("express");
+const CarePlanRouter = express.Router();
 
-const {createNursePlan,getAllCarePlan,GetMostUsedCarePlan,updateOtherCarePlan,deleteCarePlanByIds,
-    deleteOtherCarePlan, deleteOthersCarePlan,editCarePlan,updateOthersCarePlan,updateCarePlan}=require("../../controllers/ipd-form-setup/carePlan.controller");
+const {
+  createNursePlan,
+  getAllCarePlan,
+  GetMostUsedCarePlan,
+  updateOtherCarePlan,
+  deleteCarePlanByIds,
+  deleteOtherCarePlan,
+  deleteOthersCarePlan,
+  editCarePlan,
+  updateOthersCarePlan,
+  updateCarePlan
+} = require("../../controllers/ipd-form-setup/carePlan.controller");
+
 const { handleToken } = require("../../utils/handleToken");
 
+// GET routes
 CarePlanRouter.get("/careplan", handleToken, getAllCarePlan);
+CarePlanRouter.get("/careplan/most-used/:id", handleToken, GetMostUsedCarePlan);
+
+// POST routes
 CarePlanRouter.post("/careplan", handleToken, createNursePlan);
-CarePlanRouter.put(
-  "/careplan/:id",
-  handleToken,
-  updateOtherCarePlan
-);
-CarePlanRouter.delete(
-  "/careplan",
-  handleToken,
-  deleteOtherCarePlan
-);
-CarePlanRouter.delete(
-    "/careplan/:id",
-    handleToken,
-    deleteCarePlanByIds,
-);
-CarePlanRouter.delete(
-  "/careplan/inner-data/:id",
-  handleToken,
-  deleteOthersCarePlan
-);
-CarePlanRouter.put(
-  "/careplan/objective/:id",
-  handleToken,
-  updateOthersCarePlan
-);
-CarePlanRouter.put(
-  "/careplan/objective-data/:id",
-  handleToken,
-  updateCarePlan
-);
-CarePlanRouter.put(
-  "/careplan/inner-data/objective-data/:id",
-  handleToken,
-  editCarePlan
-);
-CarePlanRouter.get(
-  "/careplan/most-used/:id",
-  handleToken,
-  GetMostUsedCarePlan
-);
-module.exports=CarePlanRouter
+
+// PUT routes
+CarePlanRouter.put("/careplan/:id", handleToken, updateOtherCarePlan);
+CarePlanRouter.put("/careplan/subHeading-data/:id", handleToken, updateOthersCarePlan); // For updating subHeading data
+CarePlanRouter.put("/careplan/inner-data/subHeading-data/:id", handleToken, editCarePlan); // For updating inner data
+CarePlanRouter.put("/careplan/objective-data/:id", handleToken, updateCarePlan);
+
+// DELETE routes
+// IMPORTANT: Order matters! More specific routes should come first
+CarePlanRouter.delete("/careplan/bulk", handleToken, deleteCarePlanByIds); // For bulk deletion
+CarePlanRouter.delete("/careplan/inner-data/:id", handleToken, deleteOthersCarePlan); // For deleting inner data
+CarePlanRouter.delete("/careplan/:id", handleToken, deleteOtherCarePlan); // For deleting subHeading data
+
+module.exports = CarePlanRouter;
