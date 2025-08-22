@@ -61,11 +61,9 @@ const registerAdmin = async (req, res) => {
 const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("kigub adnub,,,,,,");
 
     // Check if the admin exists
     const admin = await AdminModel.findOne({ email: email });
-    console.log("admin", admin);
     if (!admin) {
       return res
         .status(httpStatus.BAD_REQUEST)
@@ -561,6 +559,29 @@ const getDashboardInfo = async (req, res) => {
       else totalOnlineToday = entry.total;
     });
 
+    // ---------------------
+    // 5️⃣ NEW: Department-wise Payment Chart
+    // ---------------------
+    const departmentData = await OPDReceiptModel.aggregate([
+      {
+        $match: {
+          updatedAt: {
+            $gte: new Date(dateList[0]),
+            $lte: new Date(dateList[dateList.length - 1] + "T23:59:59.999Z"),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$departmentName",
+          total: { $sum: "$paidAmount" },
+        },
+      },
+    ]);
+
+    const departmentArray = departmentData.map((d) => d._id || "Unknown");
+    const departmentTotals = departmentData.map((d) => d.total);
+
     return res.status(200).json({
       success: true,
       message: "success",
@@ -583,6 +604,10 @@ const getDashboardInfo = async (req, res) => {
           xLabels: labelList,
         },
         appointmentModeSummary: appointmentModeSummary,
+        departmentChart: {
+          departmentArray, // X labels for chart
+          departmentTotals, // Y values for chart
+        },
       },
     });
   } catch (error) {
