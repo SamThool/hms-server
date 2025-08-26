@@ -44,11 +44,7 @@ companySetupRouter.post(
 );
 
 // Route to get company details
-companySetupRouter.get(
-  "/",
-  handleToken, // Token validation middleware
-  companyController.getCompanySetupDetails // Controller to handle fetching company details
-);
+companySetupRouter.get("/", companyController.getCompanySetupDetails);
 
 // Route to update company setup details, including file updates
 companySetupRouter.put(

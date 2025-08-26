@@ -158,6 +158,7 @@ const TemplateSectionRouter = require("./Template/templateSection.route");
 const formSetupVitalsMaster = require("./Masters/formSetup/formSetupVitalMaster.route");
 const crossConsultationRoute = require("./OPD/Patient/patient_cross_consultation.route");
 const ParameterMasterRouter = require("./Masters/Pathology_Master/parameterMaster.route");
+const consultantsRouter = require("./Staffs/consultant/consultants.route");
 const router = express.Router();
 
 const defaultRoutes = [
@@ -365,7 +366,7 @@ const defaultRoutes = [
 
   {
     path: "/consultant",
-    route: consultantRoute,
+    route: consultantsRouter,
   },
   {
     path: "/employee",
