@@ -98,6 +98,7 @@ const updateNotificationStatus = async (req, res) => {
 
     // 🔥 Emit to consultant
     const patientId = updatedNotification.patientId;
+    const opdId = updatedNotification.opdId;
     const patientInfo = await OpdPatientModel.findOne({ patientId })
       .populate({
         path: "notifications",
@@ -107,12 +108,21 @@ const updateNotificationStatus = async (req, res) => {
         },
       })
       .exec();
+
+    const allNotificationOfPatient = await Notification.find({ opdId })
+      .populate({
+        path: "sender",
+        options: { sort: { createdAt: -1 } },
+      })
+      .exec();
+
     emitPatientStatusUpdate(patientInfo);
     emitPatientApprovedRequest(patientInfo);
 
     res.status(200).json({
       message: "Notification updated successfully.",
       notification: updatedNotification,
+      allNotificationOfPatient,
     });
   } catch (error) {
     console.error("❌ Failed to update notification:", error.message);
