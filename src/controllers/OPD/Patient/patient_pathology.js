@@ -6,24 +6,41 @@ const OpdPatientModel = require("../../../models/appointment-confirm/opdPatient.
 const createPathology = async (req, res) => {
   try {
     const { patientId } = req.body;
-    const newPathology = new PatientPathologyModel(req.body);
-    await newPathology.save();
+
+    // Check if patient already has a pathology record
+    let pathologyRecord = await PatientPathologyModel.findOne({ patientId });
+
+    if (pathologyRecord) {
+      // If exists, push new pathology details into the existing record
+      pathologyRecord = await PatientPathologyModel.findOneAndUpdate(
+        { patientId },
+        { $push: { pathology: { $each: req.body.pathology } } }, // assuming pathology is an array
+        { new: true }
+      );
+    } else {
+      // If not exists, create new pathology record
+      pathologyRecord = new PatientPathologyModel(req.body);
+      await pathologyRecord.save();
+    }
+
+    // Update OPD patient record with the pathology _id
     await OpdPatientModel.findOneAndUpdate(
-      { patientId: patientId },
+      { patientId },
       {
         $set: {
-          "requests.pathology": newPathology?._id,
+          "requests.pathology": pathologyRecord._id,
         },
       },
       { new: true }
     );
+
     res.status(201).json({
-      message: "Pathology record created successfully",
-      data: newPathology,
+      message: "Pathology record added successfully",
+      data: pathologyRecord,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error creating pathology record",
+      message: "Error creating/updating pathology record",
       error: error.message,
     });
   }
