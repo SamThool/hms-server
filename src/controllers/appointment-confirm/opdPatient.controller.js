@@ -903,11 +903,12 @@ const getOpdDashboardDataOfConsultant = async (req, res) => {
     // Count Checked and Waiting Patients
     const { checked, waiting } = allOpdRegistration.reduce(
       (acc, data) => {
-        if (data.status?.toLowerCase()?.trim() === "pending") {
+        if (data.status?.toLowerCase()?.trim() === "waiting") {
           acc.waiting++;
         } else {
           acc.checked++;
         }
+        console.log("----------------------------", acc);
         return acc;
       },
       { checked: 0, waiting: 0 }
