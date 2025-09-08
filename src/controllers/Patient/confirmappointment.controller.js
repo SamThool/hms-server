@@ -143,10 +143,52 @@ const getPatientDetails = async (req, res) => {
   }
 };
 
+// const searchbyunhidphnoname = async (req, res) => {
+//   try {
+//     const { str } = req.params;
+//     console.log("str is ", str);
+//     const regex = new RegExp(`^${str}`, "i"); // startsWith-like match for better precision
+
+//     const result = await OPD_patient.find({
+//       $or: [
+//         { uhid: regex },
+//         { patientFirstName: regex },
+//         { patientLastName: regex },
+//         {
+//           $expr: {
+//             $regexMatch: {
+//               input: {
+//                 $concat: ["$patientFirstName", " ", "$patientLastName"],
+//               },
+//               regex,
+//             },
+//           },
+//         },
+//         {
+//           $expr: {
+//             $regexMatch: {
+//               input: { $toString: "$mobile_no" }, // 👈 Convert mobile_no to string
+//               regex,
+//             },
+//           },
+//         },
+//       ],
+//     })
+//       .limit(10)
+//       .select("uhid patientFirstName patientLastName mobile_no age gender");
+
+//     res.status(200).json({ success: true, data: result });
+//   } catch (error) {
+//     console.error("❌ Error in searchbyunhidphnoname:", error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "Search failed due to server error." });
+//   }
+// };
+
 const searchbyunhidphnoname = async (req, res) => {
   try {
     const { str } = req.params;
-    console.log("str is ", str);
     const regex = new RegExp(`^${str}`, "i"); // startsWith-like match for better precision
 
     const result = await OPD_patient.find({
@@ -167,19 +209,29 @@ const searchbyunhidphnoname = async (req, res) => {
         {
           $expr: {
             $regexMatch: {
-              input: { $toString: "$mobile_no" }, // 👈 Convert mobile_no to string
+              input: { $toString: "$mobile_no" },
               regex,
             },
           },
         },
       ],
     })
-      .limit(10)
+      .limit(50) // optional: limit higher to allow duplicates removal
       .select("uhid patientFirstName patientLastName mobile_no age gender");
 
-    res.status(200).json({ success: true, data: result });
+    // Remove duplicates based on UHID
+    const uniqueResults = [];
+    const seenUHIDs = new Set();
+
+    for (const doc of result) {
+      if (!seenUHIDs.has(doc.uhid)) {
+        seenUHIDs.add(doc.uhid);
+        uniqueResults.push(doc);
+      }
+    }
+
+    res.status(200).json({ success: true, data: uniqueResults });
   } catch (error) {
-    console.error("❌ Error in searchbyunhidphnoname:", error);
     res
       .status(500)
       .json({ success: false, message: "Search failed due to server error." });

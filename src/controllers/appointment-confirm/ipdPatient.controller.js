@@ -25,6 +25,28 @@ const getUhidAndRegNo = async (req, res) => {
   }
 };
 
+const generateNewIpdRegNo = async () => {
+  try {
+    const lastPatient = await IpdPatientModel.findOne()
+      .sort({ createdAt: -1 })
+      .select("ipd_regNo");
+
+    let newRegNo;
+
+    if (lastPatient && lastPatient.ipd_regNo) {
+      const lastNumber = parseInt(lastPatient.ipd_regNo.replace(/\D/g, ""));
+      newRegNo = `IPD${(lastNumber + 1).toString().padStart(6, "0")}`;
+    } else {
+      newRegNo = "IPD000001";
+    }
+
+    return newRegNo; // just return the string
+  } catch (err) {
+    console.error("Error generating new IPD registration number:", err);
+    throw err;
+  }
+};
+
 const CreateRegistrationDetail = async (req, res) => {
   try {
     const userId = req.user?.adminId;
@@ -37,11 +59,11 @@ const CreateRegistrationDetail = async (req, res) => {
     // Fix Start Here:
     // From your frontend, you're sending UHID as 'uhidNo' in req.body.
     // So, you should destructure it from req.body directly.
-    const { uhidNo, patientId, ...restOfBody } = req.body; // Destructure uhidNo and patientId and gather other fields
+    const { uhidNo, ...restOfBody } = req.body; // Destructure uhidNo and patientId and gather other fields
 
     // Add validation for uhidNo if it's expected for IPD
     if (!uhidNo) {
-        return res.status(400).json({ message: "UHID number is required" });
+      return res.status(400).json({ message: "UHID number is required" });
     }
     // Fix End Here
 
@@ -81,10 +103,6 @@ const CreateRegistrationDetail = async (req, res) => {
       whoBookId = user?.refId;
       whoBookName = employee?.basicDetails?.fullName || user?.name; // Assuming employee has fullName
     }
-    
-    if (!patientId) { // Use the destructured patientId
-      return res.status(400).json({ message: "Patient ID is required" });
-    }
 
     const defaultValues = {
       whoBookId,
@@ -93,7 +111,8 @@ const CreateRegistrationDetail = async (req, res) => {
     };
 
     let tpaId;
-    if (req.body.tpaId?.length === 0) { // Still using req.body here for tpaId, ensure consistency if you move more to restOfBody
+    if (req.body.tpaId?.length === 0) {
+      // Still using req.body here for tpaId, ensure consistency if you move more to restOfBody
       tpaId = null;
     } else {
       tpaId = req.body.tpaId;
@@ -108,17 +127,9 @@ const CreateRegistrationDetail = async (req, res) => {
       tpaId: tpaId,
       uhid: uhidNo, // Use the extracted uhidNo
       cardAttachment: cardAttachmentFile,
-      patientId: patientId // Explicitly add patientId if not covered by restOfBody
     });
 
-    await PatientDetails.findByIdAndUpdate(
-      patientId, // Use the destructured patientId
-      { $set: { isConfirm: true } },
-      { new: true }
-    );
-
     await newRegDetail.save();
-    await generateUHID(uhidNo); // Use the extracted uhidNo
 
     return res.status(201).json({
       message: `${formType} registration created successfully`,

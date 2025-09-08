@@ -1,12 +1,15 @@
 const mongoose = require("mongoose");
 
 const IpdPatientSchema = new mongoose.Schema({
+  bed: { type: String, default: "" }, // e.g., "QWE_001"
+  bedId: { type: mongoose.Types.ObjectId, ref: "Bed", default: null },
+  category: { type: String, default: "" }, // e.g., "ICU"
+  floor: { type: String, default: "" }, // e.g., "1st Floor"
+  room: { type: String, default: "" }, // e.g., "qwertyuiopqwertyuiop"
+  roomId: { type: mongoose.Types.ObjectId, ref: "Room", default: null },
+  type: { type: String, default: "" }, // e.g., "NICU"
+  typeId: { type: mongoose.Types.ObjectId, ref: "Type", default: null },
   formType: { type: String, required: true },
-  patientId: {
-    type: mongoose.Types.ObjectId,
-    ref: "Patient_Appointment",
-    default: null,
-  },
   uhid: { type: String, required: true },
   uhidId: {
     type: mongoose.Types.ObjectId,
@@ -40,26 +43,6 @@ const IpdPatientSchema = new mongoose.Schema({
   abha_card: { type: String, default: "" },
   patientPhoto: { type: String, default: "" },
   patientImpression: { type: String, default: "" },
-  departmentName: { type: String, default: "" },
-  departmentId: {
-    type: mongoose.Types.ObjectId,
-    ref: "DepartmentSetup",
-  },
-  // consultantName: { type: String, default: "" },
-  // consultantId: {
-  //   type: mongoose.Types.ObjectId,
-  //   ref: "StaffConsultant",
-  // },
-
-  primaryConsultant: {
-    type: String,
-    default: "",
-  },
-  secondaryConsultant: {
-    type: String,
-    default: "",
-  },
-
   bedAllocation: { type: String, default: "" },
   mlcNonMlc: { type: String, default: "" },
   note: { type: String, default: "" },
@@ -82,11 +65,11 @@ const IpdPatientSchema = new mongoose.Schema({
   marketingCommunity: { type: String, default: "" },
   note: { type: String, default: "" },
 
-  status: {
-    type: String,
-    enum: ["pending", "out"],
-    default: "pending",
-  },
+  // status: {
+  //   type: String,
+  //   enum: ["pending", "out"],
+  //   default: "pending",
+  // },
 
   billingStatus: {
     type: String,
@@ -100,16 +83,16 @@ const IpdPatientSchema = new mongoose.Schema({
   whoBookName: {
     type: String,
   },
-  patientIn: {
-    type: Boolean,
-    default: false,
-  },
+  // patientIn: {
+  //   type: Boolean,
+  //   default: false,
+  // },
   tpa: { type: String, default: "" },
   tpaId: {
     type: mongoose.Types.ObjectId,
     ref: "TPA_Company_Master",
     default: null,
-    required:false
+    required: false,
   },
   note: { type: [String], default: "" },
   dateOfAdmission: {
