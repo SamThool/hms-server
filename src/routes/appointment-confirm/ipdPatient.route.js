@@ -6,6 +6,7 @@ const {
   CreateRegistrationDetail,
   getAllRegisteration,
   updateRegistation,
+  findBedPatient,
   getUhidAndRegNo,
 } = require("../../controllers/appointment-confirm/ipdPatient.controller");
 const { CategoryMasterModel } = require("../../models");
@@ -63,6 +64,8 @@ IPDPatientRouter.post(
     }
   }
 );
+
+IPDPatientRouter.get("/findBedPatient/:bedMasterId/:bedName", findBedPatient);
 
 IPDPatientRouter.get("/", getAllRegisteration);
 IPDPatientRouter.get("/ipd-uhid-reg", getUhidAndRegNo);

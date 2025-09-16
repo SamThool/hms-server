@@ -14,6 +14,7 @@ const {
   emitPatientStatusUpdate,
   emitPatientNotification,
 } = require("../../utils/socket");
+const ipdPatientModel = require("../../models/appointment-confirm/ipdPatient.model");
 
 // let uhidId;
 // const generateUHID = async (uhidNo) => {
@@ -683,14 +684,27 @@ const getDailyConfirmedAppointmentConsultantWise = async (req, res) => {
 
     console.log("app", appointments);
     // Filter records based on today's date
-    const filteredAppointments = appointments.filter(
+    const OpdData = appointments.filter(
       (appointment) => appointment.patientId?.date === todayDate
     );
-    emitPatientNotification(filteredAppointments);
+
+    // 🔹 IPD logic
+    const IpdData = await ipdPatientModel
+      .find({
+        occupiedBedId: { $exists: true, $ne: null }, // has a bed assigned
+        $or: [{ primaryConsultantId: id }, { secondaryConsultantId: id }],
+      })
+      .populate("occupiedBedId")
+      .populate("primaryConsultantId")
+      .populate("secondaryConsultantId")
+      .exec();
+
+    emitPatientNotification(OpdData);
     return res.status(200).json({
       success: true,
-      count: filteredAppointments.length,
-      data: filteredAppointments,
+      count: OpdData.length,
+      OpdData,
+      IpdData,
     });
   } catch (error) {
     console.error("Error fetching appointments:", error);
@@ -701,6 +715,7 @@ const getDailyConfirmedAppointmentConsultantWise = async (req, res) => {
     });
   }
 };
+
 const getPatientOutData = async (req, res) => {
   try {
     const { search } = req.query;
@@ -914,8 +929,22 @@ const getOpdDashboardDataOfConsultant = async (req, res) => {
       { checked: 0, waiting: 0 }
     );
 
+    const IpdData = await ipdPatientModel
+      .find({
+        occupiedBedId: { $exists: true, $ne: null }, // has a bed assigned
+        $or: [
+          { primaryConsultantId: consultantId },
+          { secondaryConsultantId: consultantId },
+        ],
+      })
+      .populate("occupiedBedId")
+      .populate("primaryConsultantId")
+      .populate("secondaryConsultantId")
+      .exec();
+
     return res.json({
       totalAppointments: allAppointments.length,
+      ipdPatientNo: IpdData.length,
       filteredAppointments: filteredAppointments.length,
       newPatients,
       followUpPatients,

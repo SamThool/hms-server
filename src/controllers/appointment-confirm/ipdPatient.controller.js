@@ -47,6 +47,38 @@ const generateNewIpdRegNo = async () => {
   }
 };
 
+const findBedPatient = async (req, res) => {
+  try {
+    const { bedMasterId, bedName } = req.params;
+
+    if (!bedMasterId || !bedName) {
+      return res.status(400).json({
+        success: false,
+        error: "bedMasterId and bedName are required",
+      });
+    }
+
+    // Find an active patient on this bed
+    const patient = await IpdPatientModel.findOne({
+      bedId: bedMasterId,
+      bed: bedName,
+
+      delete: false,
+    }).select(
+      "uhid patientFirstName patientMiddleName patientLastName ipd_regNo bed bedId"
+    );
+
+    if (!patient) {
+      return res.status(200).json({ success: true, patient: null });
+    }
+
+    return res.status(200).json({ success: true, patient });
+  } catch (error) {
+    console.error("Error finding bed patient:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 const CreateRegistrationDetail = async (req, res) => {
   try {
     const userId = req.user?.adminId;
@@ -56,77 +88,68 @@ const CreateRegistrationDetail = async (req, res) => {
       return res.status(400).json({ message: "Form type is required" });
     }
 
-    // Fix Start Here:
-    // From your frontend, you're sending UHID as 'uhidNo' in req.body.
-    // So, you should destructure it from req.body directly.
-    const { uhidNo, ...restOfBody } = req.body; // Destructure uhidNo and patientId and gather other fields
-
-    // Add validation for uhidNo if it's expected for IPD
-    if (!uhidNo) {
+    // Destructure uhidNo from body
+    const { uhid, ...restOfBody } = req.body;
+    if (!uhid) {
       return res.status(400).json({ message: "UHID number is required" });
     }
-    // Fix End Here
 
-    let whoBookId, whoBookName;
+    // Handle file uploads
     let aadharCardFile = null;
     let abhaCardFile = null;
-    let cardAttachmentFile = null; // Declare cardAttachmentFile as well
+    let cardAttachmentFile = null;
 
-    if (req.files && req.files["aadhar_card"] && req.files["aadhar_card"][0]) {
-      aadharCardFile = req.files["aadhar_card"][0].filename;
+    if (req.files?.aadhar_card?.[0]) {
+      aadharCardFile = req.files.aadhar_card[0].filename;
+    }
+    if (req.files?.abha_card?.[0]) {
+      abhaCardFile = req.files.abha_card[0].filename;
+    }
+    if (req.files?.cardAttachment?.[0]) {
+      cardAttachmentFile = req.files.cardAttachment[0].filename;
     }
 
-    if (req.files && req.files["abha_card"] && req.files["abha_card"][0]) {
-      abhaCardFile = req.files["abha_card"][0].filename;
-    }
-
-    if (
-      req.files &&
-      req.files["cardAttachment"] &&
-      req.files["cardAttachment"][0]
-    ) {
-      cardAttachmentFile = req.files["cardAttachment"][0].filename;
-    }
-
+    // Determine who booked the registration
+    let whoBookId, whoBookName;
     if (user?.role === "admin") {
-      req.body.user = user?.refId; // Note: Directly modifying req.body is generally not recommended here if you already destructured.
       whoBookId = user?.refId;
       whoBookName = user?.name;
     } else if (user?.role === "doctor") {
       const doctor = await ConsultantModel.findOne({ _id: user?.refId });
-      req.body.user = doctor?.basicDetails.user;
       whoBookId = user?.refId;
       whoBookName = user?.name;
+      restOfBody.user = doctor?.basicDetails?.user;
     } else {
       const employee = await EmployeeModel.findOne({ _id: user?.refId });
-      req.body.user = employee?.basicDetails.user;
       whoBookId = user?.refId;
-      whoBookName = employee?.basicDetails?.fullName || user?.name; // Assuming employee has fullName
+      whoBookName = employee?.basicDetails?.fullName || user?.name;
+      restOfBody.user = employee?.basicDetails?.user;
     }
 
+    // Default values
     const defaultValues = {
       whoBookId,
       whoBookName,
       delete: false,
     };
 
-    let tpaId;
-    if (req.body.tpaId?.length === 0) {
-      // Still using req.body here for tpaId, ensure consistency if you move more to restOfBody
-      tpaId = null;
-    } else {
-      tpaId = req.body.tpaId;
-    }
+    // Normalize TPA
+    let tpaId = restOfBody.tpaId?.length === 0 ? null : restOfBody.tpaId;
 
+    // 🔥 Generate a new ipd_regNo
+    const ipd_regNo = await generateNewIpdRegNo();
+
+    // Create new doc
     const newRegDetail = new IpdPatientModel({
       ...defaultValues,
+      ...restOfBody,
       aadhar_card: aadharCardFile,
       abha_card: abhaCardFile,
-      // Use restOfBody for the majority of the data
-      ...restOfBody,
-      tpaId: tpaId,
-      uhid: uhidNo, // Use the extracted uhidNo
       cardAttachment: cardAttachmentFile,
+      tpaId,
+      uhid: uhid,
+      occupiedBedId: req.body.bedId,
+      ipd_regNo, // 👈 add here
     });
 
     await newRegDetail.save();
@@ -209,4 +232,5 @@ module.exports = {
   getAllRegisteration,
   updateRegistation,
   getUhidAndRegNo,
+  findBedPatient,
 };

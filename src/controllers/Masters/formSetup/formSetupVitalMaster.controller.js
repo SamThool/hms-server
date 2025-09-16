@@ -233,9 +233,6 @@ const createPatientVital = async (req, res) => {
   try {
     const { body } = req;
     console.log("body>>>", body);
-    console.log(
-      "------------------------------------------------------------------------------"
-    );
     console.log("selectedParameters", body.respiratoryRate);
     const newData = {};
     const extraVitals = {};

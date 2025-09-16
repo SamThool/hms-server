@@ -22,6 +22,10 @@ const OPDPackageRoute = require("./Masters/opd-package.route");
 const opdConsultantServiceRouter = require("./Masters/opdConsultantService.route");
 const notificationRouter = require("./Notification/Notification");
 const translateRouter = require("./translate.route");
+const ipdFormRoutes = require("./IPD/ipdform.route");
+const ipdSubFormRoutes = require("./IPD/ipdsubform.route");
+const ipdLayersRoutes = require("./IPD/ipdlayers.route");
+const ipdPatientEMRRoutes = require("./IPD/ipdPatientEMR");
 
 const surgeryPackageRoute = require("./Masters/surgeryPackage.route");
 const charityMasterRoute = require("./Masters/charity.route");
@@ -286,6 +290,9 @@ const defaultRoutes = [
     path: "/procedure-master",
     route: ProcedureRoute,
   },
+  { path: "/ipdform", route: ipdFormRoutes },
+  { path: "/ipdsubform", route: ipdSubFormRoutes },
+  { path: "/ipdlayer", route: ipdLayersRoutes },
   {
     path: "/investigation-pathology-master",
     route: investigationPathologyMasterRoute,
@@ -482,6 +489,10 @@ const defaultRoutes = [
   {
     path: "/brand-master",
     route: brandMasterRoutes,
+  },
+  {
+    path: "/ipdPatientEMR",
+    route: ipdPatientEMRRoutes,
   },
   {
     path: "/medicines",
