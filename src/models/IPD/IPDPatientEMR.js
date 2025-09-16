@@ -11,6 +11,7 @@ const EMRSchema = new mongoose.Schema(
     },
     updatedAt: { type: Date, default: Date.now },
     data: { type: Array, default: [] },
+    image: { type: String, default: null },
   },
   { _id: true } // keep _id for each EMR entry
 );

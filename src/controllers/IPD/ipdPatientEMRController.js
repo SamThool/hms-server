@@ -4,7 +4,7 @@ const IPDPatientEMR = require("../../models/IPD/IPDPatientEMR");
 // Add EMR entry
 const addEMR = async (req, res) => {
   try {
-    const { patientId, consultantName, consultantId, data } = req.body;
+    const { patientId, consultantName, consultantId, data, image } = req.body;
 
     let patientEMR = await IPDPatientEMR.findOne({ patientId: patientId });
 
@@ -12,6 +12,7 @@ const addEMR = async (req, res) => {
       consultantName,
       consultantId,
       data,
+      image,
       updatedAt: new Date(),
     };
 
