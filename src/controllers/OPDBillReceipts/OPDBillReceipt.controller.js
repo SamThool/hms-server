@@ -224,8 +224,6 @@ const createOPDReceipt = async (req, res) => {
       emitPatientStatusUpdate(newReceipt);
     }
 
-    console.log("-------------------------------------------------", req.body);
-
     if (req?.body?.services?.[0]?.serviceCode) {
       const id = req.body.services[0].serviceCode;
       try {

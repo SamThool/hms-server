@@ -1,739 +1,447 @@
 const httpStatus = require("http-status");
 
 const {
+  PatientExaminationModel,
 
-  PatientExaminationModel,
+  LocalExaminationModel,
 
-  LocalExaminationModel,
+  GeneralExaminationModel,
 
-  GeneralExaminationModel,
+  SystematicExaminationModel,
 
-  SystematicExaminationModel,
-
-  OtherExaminationModel,
-
+  OtherExaminationModel,
 } = require("../../../models");
 
 const mongoose = require("mongoose");
 
-
-
 const createPatientExamination = async (req, res) => {
+  try {
+    const PatientExamination = new PatientExaminationModel({ ...req.body });
+
+    const localexamIds = PatientExamination.local.map((l) => l._id);
+
+    const generalexamIds = PatientExamination.general.map((p) => p._id);
+
+    const systematicexamIds = PatientExamination.systematic.map((s) => s._id);
+
+    const otherexamIds = PatientExamination.other.map((o) => o._id); // console.log(generalexamIds);
+
+    const localExamination = await LocalExaminationModel.find({
+      _id: { $in: localexamIds },
+    });
+
+    const generalExamination = await GeneralExaminationModel.find({
+      _id: { $in: generalexamIds },
+    });
+
+    const systematicExamination = await SystematicExaminationModel.find({
+      _id: { $in: systematicexamIds },
+    });
+
+    const otherExamination = await OtherExaminationModel.find({
+      _id: { $in: otherexamIds },
+    }); // console.log(generalExamination);
+
+    PatientExamination.local.forEach((local) => {
+      local.subDisorder.forEach((subDisorder) => {
+        localExamination.forEach((l) => {
+          if (l._id.toString() === local._id.toString()) {
+            const foundLocal = localExamination.find(
+              (l) => l._id.toString() === local._id.toString()
+            );
+
+            if (foundLocal) {
+              const foundSubDisorder = foundLocal.exam.subDisorder.find(
+                (name) => name.name === subDisorder.name
+              );
+
+              if (foundSubDisorder) {
+                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
+              }
+            }
+          }
+        });
+      });
+    });
+
+    PatientExamination.general.forEach((general) => {
+      general.subDisorder.forEach((subDisorder) => {
+        generalExamination.forEach((g) => {
+          if (g._id.toString() === general._id.toString()) {
+            const foundGeneral = generalExamination.find(
+              (g) => g._id.toString() === general._id.toString()
+            );
+
+            if (foundGeneral) {
+              const foundSubDisorder = foundGeneral.exam.subDisorder.find(
+                (name) => name.name === subDisorder.name
+              );
+
+              if (foundSubDisorder) {
+                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
+              }
+            }
+          }
+        });
+      });
+    });
+
+    PatientExamination.systematic.forEach((systematic) => {
+      systematic.subDisorder?.forEach((subDisorder) => {
+        systematicExamination.forEach((s) => {
+          if (s._id.toString() === systematic._id.toString()) {
+            const foundSystematic = systematicExamination.find(
+              (s) => s._id.toString() === systematic._id.toString()
+            );
+
+            if (foundSystematic) {
+              const foundSubDisorder = foundSystematic.exam.subDisorder.find(
+                (name) => name.name === subDisorder.name
+              );
+
+              if (foundSubDisorder) {
+                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
+              }
+            }
+          }
+        });
+      });
+    });
+
+    otherExamination.forEach((other) => {
+      const otherExamination = PatientExamination.other.find(
+        (p) => p._id === other._id.toString()
+      );
+
+      if (otherExamination) {
+        other.count = (other.count || 0) + 1;
+      }
+    });
 
-  try {
+    await Promise.all([
+      localExamination.map((local) => local.save()),
 
-    const PatientExamination = new PatientExaminationModel({ ...req.body });
+      generalExamination.map((general) => general.save()),
 
-    const localexamIds = PatientExamination.local.map((l) => l._id);
+      systematicExamination.map((systematic) => systematic.save()),
 
-    const generalexamIds = PatientExamination.general.map((p) => p._id);
+      otherExamination.map((other) => other.save()),
+    ]);
 
-    const systematicexamIds = PatientExamination.systematic.map((s) => s._id);
+    const savedPatientExamination = await PatientExamination.save();
 
-    const otherexamIds = PatientExamination.other.map((o) => o._id);
+    res.status(httpStatus.OK).json({
+      msg: "Patient Examination Created Successfuly",
 
-    // console.log(generalexamIds);
+      data: savedPatientExamination,
+    });
+  } catch (error) {
+    console.log(error);
 
-    const localExamination = await LocalExaminationModel.find({
+    res
 
-      _id: { $in: localexamIds },
+      .status(httpStatus.INTERNAL_SERVER_ERROR)
 
-    });
-
-    const generalExamination = await GeneralExaminationModel.find({
-
-      _id: { $in: generalexamIds },
-
-    });
-
-    const systematicExamination = await SystematicExaminationModel.find({
-
-      _id: { $in: systematicexamIds },
-
-    });
-
-    const otherExamination = await OtherExaminationModel.find({
-
-      _id: { $in: otherexamIds },
-
-    });
-
-    // console.log(generalExamination);
-
-
-
-    PatientExamination.local.forEach((local) => {
-
-      local.subDisorder.forEach((subDisorder) => {
-
-        localExamination.forEach((l) => {
-
-          if (l._id.toString() === local._id.toString()) {
-
-            const foundLocal = localExamination.find(
-
-              (l) => l._id.toString() === local._id.toString()
-
-            );
-
-            if (foundLocal) {
-
-              const foundSubDisorder = foundLocal.exam.subDisorder.find(
-
-                (name) => name.name === subDisorder.name
-
-              );
-
-              if (foundSubDisorder) {
-
-                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
-
-              }
-
-            }
-
-          }
-
-        });
-
-      });
-
-    });
-
-
-
-    PatientExamination.general.forEach((general) => {
-
-      general.subDisorder.forEach((subDisorder) => {
-
-        generalExamination.forEach((g) => {
-
-          if (g._id.toString() === general._id.toString()) {
-
-            const foundGeneral = generalExamination.find(
-
-              (g) => g._id.toString() === general._id.toString()
-
-            );
-
-            if (foundGeneral) {
-
-              const foundSubDisorder = foundGeneral.exam.subDisorder.find(
-
-                (name) => name.name === subDisorder.name
-
-              );
-
-              if (foundSubDisorder) {
-
-                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
-
-              }
-
-            }
-
-          }
-
-        });
-
-      });
-
-    });
-
-
-
-    PatientExamination.systematic.forEach((systematic) => {
-
-      systematic.subDisorder?.forEach((subDisorder) => {
-
-        systematicExamination.forEach((s) => {
-
-          if (s._id.toString() === systematic._id.toString()) {
-
-            const foundSystematic = systematicExamination.find(
-
-              (s) => s._id.toString() === systematic._id.toString()
-
-            );
-
-            if (foundSystematic) {
-
-              const foundSubDisorder = foundSystematic.exam.subDisorder.find(
-
-                (name) => name.name === subDisorder.name
-
-              );
-
-              if (foundSubDisorder) {
-
-                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
-
-              }
-
-            }
-
-          }
-
-        });
-
-      });
-
-    });
-
-
-
-    otherExamination.forEach((other) => {
-
-      const otherExamination = PatientExamination.other.find(
-
-        (p) => p._id === other._id.toString()
-
-      );
-
-      if (otherExamination) {
-
-        other.count = (other.count || 0) + 1;
-
-      }
-
-    });
-
-
-
-    await Promise.all([
-
-      localExamination.map((local) => local.save()),
-
-      generalExamination.map((general) => general.save()),
-
-      systematicExamination.map((systematic) => systematic.save()),
-
-      otherExamination.map((other) => other.save()),
-
-    ]);
-
-    const savedPatientExamination = await PatientExamination.save();
-
-    res.status(httpStatus.OK).json({
-
-      msg: "Patient Examination Created Successfuly",
-
-      data: savedPatientExamination,
-
-    });
-
-  } catch (error) {
-
-    console.log(error);
-
-    res
-
-      .status(httpStatus.INTERNAL_SERVER_ERROR)
-
-      .json({ error: "Internal server error" });
-
-  }
-
+      .json({ error: "Internal server error" });
+  }
 };
 
-
-
 // ... existing code ...
-
-
 
 const deleteDisorderDiagram = async (req, res) => {
-
-  try {
-
-    const { disorderId, patientExaminationId } = req.body;
-
-
-
-    if (!disorderId || !patientExaminationId) {
-
-      return res.status(httpStatus.BAD_REQUEST).json({
-
-        error: "disorderId and patientExaminationId are required",
-
-      });
-
-    }
-
-
-
-    // Find the patient examination
-
-    const patientExamination = await PatientExaminationModel.findById(
-
-      patientExaminationId
-
-    );
-
-
-
-    if (!patientExamination) {
-
-      return res.status(httpStatus.NOT_FOUND).json({
-
-        error: "Patient examination not found",
-
-      });
-
-    }
-
-
-
-    let updated = false;
-
-
-
-    // Check and update in local
-
-    if (patientExamination.local && Array.isArray(patientExamination.local)) {
-
-      patientExamination.local = patientExamination.local.map((disorder) => {
-
-        if (disorder._id.toString() === disorderId) {
-
-          updated = true;
-
-          return { ...disorder, diagram: null };
-
-        }
-
-        return disorder;
-
-      });
-
-    }
-
-
-
-    // Check and update in systematic
-
-    if (
-
-      patientExamination.systematic &&
-
-      Array.isArray(patientExamination.systematic)
-
-    ) {
-
-      patientExamination.systematic = patientExamination.systematic.map(
-
-        (disorder) => {
-
-          if (disorder._id.toString() === disorderId) {
-
-            updated = true;
-
-            return { ...disorders, diagram: null };
-
-          }
-
-          return disorder;
-
-        }
-
-      );
-
-    }
-
-
-
-    if (!updated) {
-
-      return res.status(httpStatus.NOT_FOUND).json({
-
-        error: "Disorder not found in local or systematic examination",
-
-      });
-
-    }
-
-
-
-    // Save the updated patient examination
-
-    const savedPatientExamination = await patientExamination.save();
-
-
-
-    res.status(httpStatus.OK).json({
-
-      msg: "Diagram deleted successfully",
-
-      data: savedPatientExamination,
-
-    });
-
-  } catch (error) {
-
-    console.log(error);
-
-    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-
-      error: "Internal server error",
-
-    });
-
-  }
-
+  try {
+    const { disorderId, patientExaminationId } = req.body;
+
+    if (!disorderId || !patientExaminationId) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        error: "disorderId and patientExaminationId are required",
+      });
+    } // Find the patient examination
+
+    const patientExamination = await PatientExaminationModel.findById(
+      patientExaminationId
+    );
+
+    if (!patientExamination) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        error: "Patient examination not found",
+      });
+    }
+
+    let updated = false; // Check and update in local
+
+    if (patientExamination.local && Array.isArray(patientExamination.local)) {
+      patientExamination.local = patientExamination.local.map((disorder) => {
+        if (disorder._id.toString() === disorderId) {
+          updated = true;
+
+          return { ...disorder, diagram: null };
+        }
+
+        return disorder;
+      });
+    } // Check and update in systematic
+
+    if (
+      patientExamination.systematic &&
+      Array.isArray(patientExamination.systematic)
+    ) {
+      patientExamination.systematic = patientExamination.systematic.map(
+        (disorder) => {
+          if (disorder._id.toString() === disorderId) {
+            updated = true;
+
+            return { ...disorders, diagram: null };
+          }
+
+          return disorder;
+        }
+      );
+    }
+
+    if (!updated) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        error: "Disorder not found in local or systematic examination",
+      });
+    } // Save the updated patient examination
+
+    const savedPatientExamination = await patientExamination.save();
+
+    res.status(httpStatus.OK).json({
+      msg: "Diagram deleted successfully",
+
+      data: savedPatientExamination,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      error: "Internal server error",
+    });
+  }
 };
-
-
 
 // ... existing code ...
 
-
-
 const updatePatientExamination = async (req, res) => {
+  console.log("reached heres");
+
+  try {
+    const { id } = req.params;
+
+    const PatientExamination = await PatientExaminationModel.findById(id);
+
+    if (!PatientExamination) {
+      return res
+
+        .status(httpStatus.NOT_FOUND)
+
+        .json({ msg: "Patient Examination not found" });
+    }
+
+    const localexamIds = PatientExamination.local.map((l) => l._id);
+
+    const generalexamIds = PatientExamination.general.map((p) => p._id);
+
+    const systematicexamIds = PatientExamination.systematic.map((s) => s._id);
+
+    const otherexamIds = PatientExamination.other.map((o) => o._id);
+
+    const localExamination = await LocalExaminationModel.find({
+      _id: { $in: localexamIds },
+    });
+
+    const generalExamination = await GeneralExaminationModel.find({
+      _id: { $in: generalexamIds },
+    });
+
+    const systematicExamination = await SystematicExaminationModel.find({
+      _id: { $in: systematicexamIds },
+    });
+
+    const otherExamination = await OtherExaminationModel.find({
+      _id: { $in: otherexamIds },
+    });
+
+    PatientExamination.local.forEach((local) => {
+      local.subDisorder.forEach((subDisorder) => {
+        localExamination.forEach((l) => {
+          if (l._id.toString() === local._id.toString()) {
+            const foundLocal = localExamination.find(
+              (l) => l._id.toString() === local._id.toString()
+            );
+
+            if (foundLocal) {
+              const foundSubDisorder = foundLocal.exam.subDisorder.find(
+                (name) => name.name === subDisorder.name
+              );
+
+              if (foundSubDisorder) {
+                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
+              }
+            }
+          }
+        });
+      });
+    });
+
+    PatientExamination.general.forEach((general) => {
+      general.subDisorder.forEach((subDisorder) => {
+        generalExamination.forEach((g) => {
+          if (g._id.toString() === general._id.toString()) {
+            const foundGeneral = generalExamination.find(
+              (g) => g._id.toString() === general._id.toString()
+            );
+
+            if (foundGeneral) {
+              const foundSubDisorder = foundGeneral.exam.subDisorder.find(
+                (name) => name.name === subDisorder.name
+              );
+
+              if (foundSubDisorder) {
+                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
+              }
+            }
+          }
+        });
+      });
+    });
+
+    PatientExamination.systematic.forEach((systematic) => {
+      systematic.subDisorder.forEach((subDisorder) => {
+        systematicExamination.forEach((s) => {
+          if (s._id.toString() === systematic._id.toString()) {
+            const foundSystematic = systematicExamination.find(
+              (s) => s._id.toString() === systematic._id.toString()
+            );
+
+            if (foundSystematic) {
+              const foundSubDisorder = foundSystematic.exam.subDisorder.find(
+                (name) => name.name === subDisorder.name
+              );
+
+              if (foundSubDisorder) {
+                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
+              }
+            }
+          }
+        });
+      });
+    });
 
-  console.log("reached heres");
+    otherExamination.forEach((other) => {
+      const otherExamination = PatientExamination.other.find(
+        (p) => p._id === other._id.toString()
+      );
 
-  console.log("--------------------------------------------------", req.body);
+      if (otherExamination) {
+        other.count = (other.count || 0) + 1;
+      }
+    });
 
+    await Promise.all([
+      localExamination.map((local) => local.save()),
 
+      generalExamination.map((general) => general.save()),
 
-  try {
+      systematicExamination.map((systematic) => systematic.save()),
 
-    const { id } = req.params;
+      otherExamination.map((other) => other.save()),
+    ]);
 
-    const PatientExamination = await PatientExaminationModel.findById(id);
+    const updatedPatientExamination =
+      await PatientExaminationModel.findByIdAndUpdate(id, req.body, {
+        new: true,
+      });
 
-    if (!PatientExamination) {
+    res.status(httpStatus.OK).json({
+      msg: "Patient Examination updated",
 
-      return res
+      data: updatedPatientExamination,
+    });
+  } catch (error) {
+    console.log(error);
 
-        .status(httpStatus.NOT_FOUND)
+    res
 
-        .json({ msg: "Patient Examination not found" });
+      .status(httpStatus.INTERNAL_SERVER_ERROR)
 
-    }
-
-    const localexamIds = PatientExamination.local.map((l) => l._id);
-
-    const generalexamIds = PatientExamination.general.map((p) => p._id);
-
-    const systematicexamIds = PatientExamination.systematic.map((s) => s._id);
-
-    const otherexamIds = PatientExamination.other.map((o) => o._id);
-
-
-
-    const localExamination = await LocalExaminationModel.find({
-
-      _id: { $in: localexamIds },
-
-    });
-
-    const generalExamination = await GeneralExaminationModel.find({
-
-      _id: { $in: generalexamIds },
-
-    });
-
-    const systematicExamination = await SystematicExaminationModel.find({
-
-      _id: { $in: systematicexamIds },
-
-    });
-
-    const otherExamination = await OtherExaminationModel.find({
-
-      _id: { $in: otherexamIds },
-
-    });
-
-
-
-    PatientExamination.local.forEach((local) => {
-
-      local.subDisorder.forEach((subDisorder) => {
-
-        localExamination.forEach((l) => {
-
-          if (l._id.toString() === local._id.toString()) {
-
-            const foundLocal = localExamination.find(
-
-              (l) => l._id.toString() === local._id.toString()
-
-            );
-
-            if (foundLocal) {
-
-              const foundSubDisorder = foundLocal.exam.subDisorder.find(
-
-                (name) => name.name === subDisorder.name
-
-              );
-
-              if (foundSubDisorder) {
-
-                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
-
-              }
-
-            }
-
-          }
-
-        });
-
-      });
-
-    });
-
-
-
-    PatientExamination.general.forEach((general) => {
-
-      general.subDisorder.forEach((subDisorder) => {
-
-        generalExamination.forEach((g) => {
-
-          if (g._id.toString() === general._id.toString()) {
-
-            const foundGeneral = generalExamination.find(
-
-              (g) => g._id.toString() === general._id.toString()
-
-            );
-
-            if (foundGeneral) {
-
-              const foundSubDisorder = foundGeneral.exam.subDisorder.find(
-
-                (name) => name.name === subDisorder.name
-
-              );
-
-              if (foundSubDisorder) {
-
-                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
-
-              }
-
-            }
-
-          }
-
-        });
-
-      });
-
-    });
-
-
-
-    PatientExamination.systematic.forEach((systematic) => {
-
-      systematic.subDisorder.forEach((subDisorder) => {
-
-        systematicExamination.forEach((s) => {
-
-          if (s._id.toString() === systematic._id.toString()) {
-
-            const foundSystematic = systematicExamination.find(
-
-              (s) => s._id.toString() === systematic._id.toString()
-
-            );
-
-            if (foundSystematic) {
-
-              const foundSubDisorder = foundSystematic.exam.subDisorder.find(
-
-                (name) => name.name === subDisorder.name
-
-              );
-
-              if (foundSubDisorder) {
-
-                foundSubDisorder.count = (foundSubDisorder.count || 0) + 1;
-
-              }
-
-            }
-
-          }
-
-        });
-
-      });
-
-    });
-
-
-
-    otherExamination.forEach((other) => {
-
-      const otherExamination = PatientExamination.other.find(
-
-        (p) => p._id === other._id.toString()
-
-      );
-
-      if (otherExamination) {
-
-        other.count = (other.count || 0) + 1;
-
-      }
-
-    });
-
-
-
-    await Promise.all([
-
-      localExamination.map((local) => local.save()),
-
-      generalExamination.map((general) => general.save()),
-
-      systematicExamination.map((systematic) => systematic.save()),
-
-      otherExamination.map((other) => other.save()),
-
-    ]);
-
-
-
-    const updatedPatientExamination =
-
-      await PatientExaminationModel.findByIdAndUpdate(id, req.body, {
-
-        new: true,
-
-      });
-
-    res.status(httpStatus.OK).json({
-
-      msg: "Patient Examination updated",
-
-      data: updatedPatientExamination,
-
-    });
-
-  } catch (error) {
-
-    console.log(error);
-
-    res
-
-      .status(httpStatus.INTERNAL_SERVER_ERROR)
-
-      .json({ msg: "Internal server error" });
-
-  }
-
+      .json({ msg: "Internal server error" });
+  }
 };
-
-
 
 const getAllPatientExamination = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  try {
+    const currentDate = new Date();
 
-    const { id } = req.params;
+    currentDate.setHours(0, 0, 0, 0);
 
-    const currentDate = new Date();
+    const patientexamination = await PatientExaminationModel.find({
+      patientId: id,
 
-    currentDate.setHours(0, 0, 0, 0);
+      createdAt: { $gte: currentDate },
+    });
 
-    const patientexamination = await PatientExaminationModel.find({
+    res
 
-      patientId: id,
+      .status(httpStatus.OK)
 
-      createdAt: { $gte: currentDate },
+      .json({ msg: "Patient details found", data: patientexamination });
+  } catch (error) {
+    console.log(error);
 
-    });
+    res
 
-    res
+      .status(httpStatus.INTERNAL_SERVER_ERROR)
 
-      .status(httpStatus.OK)
-
-      .json({ msg: "Patient details found", data: patientexamination });
-
-  } catch (error) {
-
-    console.log(error);
-
-    res
-
-      .status(httpStatus.INTERNAL_SERVER_ERROR)
-
-      .json({ msg: "Internal server error" });
-
-  }
-
+      .json({ msg: "Internal server error" });
+  }
 };
-
-
 
 const getPatientExaminationByConsultantAndPatient = async (req, res) => {
+  const { consultantId, opdPatientId } = req.params;
 
-  const { consultantId, opdPatientId } = req.params;
+  try {
+    const patientExamination = await PatientExaminationModel.findOne({
+      consultantId: consultantId,
 
+      opdPatientId: opdPatientId,
+    });
 
+    if (!patientExamination) {
+      return res
 
-  try {
+        .status(404)
 
-    const patientExamination = await PatientExaminationModel.findOne({
+        .json({ success: false, message: "Patient examination not found" });
+    }
 
-      consultantId: consultantId,
+    return res
 
-      opdPatientId: opdPatientId,
+      .status(200)
 
-    });
+      .json({ success: true, patientExaminationData: patientExamination });
+  } catch (error) {
+    console.error("Error fetching patient examination:", error);
 
+    return res
 
+      .status(500)
 
-    if (!patientExamination) {
-
-      return res
-
-        .status(404)
-
-        .json({ success: false, message: "Patient examination not found" });
-
-    }
-
-
-
-    return res
-
-      .status(200)
-
-      .json({ success: true, patientExaminationData: patientExamination });
-
-  } catch (error) {
-
-    console.error("Error fetching patient examination:", error);
-
-    return res
-
-      .status(500)
-
-      .json({ success: false, message: "Internal server error" });
-
-  }
-
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
-
-
 module.exports = {
+  createPatientExamination,
 
-  createPatientExamination,
+  updatePatientExamination,
 
-  updatePatientExamination,
+  getAllPatientExamination,
 
-  getAllPatientExamination,
+  getPatientExaminationByConsultantAndPatient,
 
-  getPatientExaminationByConsultantAndPatient,
-
-  deleteDisorderDiagram,
-
+  deleteDisorderDiagram,
 };

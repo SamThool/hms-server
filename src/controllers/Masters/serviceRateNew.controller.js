@@ -107,7 +107,10 @@ const getAllServiceRates = async (req, res) => {
 //update service rate
 
 const updateServiceRates = async (req, res) => {
-  console.log("updateddddddddddddddddd??????????????????>>>>>>>>>", req.body);
+  console.log("➡️ Incoming update request", {
+    params: req.params,
+    body: req.body,
+  });
 
   const { id } = req.params;
   const {
@@ -116,6 +119,12 @@ const updateServiceRates = async (req, res) => {
     serviceIdOfRelatedMaster,
     rate,
     code,
+    serviceCode,
+    // Destructure the user details from the request body
+    rateCreatedBy,
+    rateUpdatedBy,
+    codeCreatedBy,
+    codeUpdatedBy,
   } = req.body;
 
   try {
@@ -170,14 +179,17 @@ const updateServiceRates = async (req, res) => {
       if (rate !== undefined && existingService.rate !== rate) {
         existingService.rate = rate;
         existingService.rateUpdatedAt = Date.now();
+        existingService.rateCreatedBy = rateCreatedBy; // Set the creator's name if rate is being set for the first time
+        existingService.rateUpdatedBy = rateUpdatedBy; // Set the updater's name
       }
 
       if (code !== undefined && existingService.code !== code) {
         existingService.code = code;
         existingService.codeUpdatedAt = Date.now();
+        existingService.codeCreatedBy = codeCreatedBy; // Set the creator's name if code is being set for the first time
+        existingService.codeUpdatedBy = codeUpdatedBy; // Set the updater's name
       }
 
-      // ✅ Save the filter
       existingService.filter = filter;
     } else {
       // Generate unique ID for new service
@@ -187,16 +199,22 @@ const updateServiceRates = async (req, res) => {
       
       const newService = {
         serviceIdOfRelatedMaster,
-        rate: rate || 0,
-        code: uniqueId, // Use generated unique ID instead of empty string
+        rate: rate ,
+        serviceId: serviceCode,
+        code: code,
         isValid: true,
-        filter, // ✅ Save the filter here
+        filter,
         rateCreatedAt: Date.now(),
         rateUpdatedAt: Date.now(),
         codeCreatedAt: Date.now(),
         codeUpdatedAt: Date.now(),
+        // Set both creator and updater details on creation
+        rateCreatedBy: rateCreatedBy,
+        rateUpdatedBy: rateUpdatedBy,
+        codeCreatedBy: codeCreatedBy,
+        codeUpdatedBy: codeUpdatedBy,
       };
-      targetArray.push(newService); // Un-commented to push new service
+      targetArray.push(newService);
     }
 
     await serviceRateListItem.save();
@@ -281,12 +299,13 @@ const updateServiceRates = async (req, res) => {
       data: serviceRateListItem,
     });
   } catch (error) {
-    console.error("Error updating service rates:", error);
+    console.error("❌ Error updating service rates:", error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
   }
 };
+
 
 //update service rate through the patholody profiles service rate table from master
 const updateMassServiceRateThroughPathology = async (req, res) => {
@@ -391,11 +410,12 @@ const updateMassServiceRateThroughPathology = async (req, res) => {
         const existingCodes = targetArray.map(service => service.code).filter(code => code);
         const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name);
         const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber);
-        
+
         const newService = {
           serviceIdOfRelatedMaster,
-          rate: rate || 0,
-          code: uniqueId, // Use generated unique ID instead of empty string
+          rate: rate,
+          code: code,
+          serviceId: serviceCode, // Use generated unique ID instead of empty string
           isValid: true,
           filter,
           rateCreatedAt: Date.now(),
@@ -495,8 +515,8 @@ const fetchServiceCodeAndRatesAccordingToServiceListItemAndFilter = async (
       
       // Generate service ID for display (auto-generated unique ID)
       // Always generate a sequential ID based on the index, regardless of whether service.code exists
-      const serviceDisplayId = generateUniqueId(serviceRateListItem.name, index + 1);
-      idList[serviceId] = serviceDisplayId;
+      // const serviceDisplayId = generateUniqueId(serviceRateListItem.name, index + 1);
+      idList[serviceId] = service.serviceCode;
     });
 
     // Return the response with rateList, codeList, and idList
@@ -938,11 +958,11 @@ const generateUniqueIdsForExistingServices = async (req, res) => {
 
   try {
     const serviceRateListItem = await ServiceRateList.findById(serviceRateListItemId);
-    
+
     if (!serviceRateListItem) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Service rate list item not found" 
+      return res.status(404).json({
+        success: false,
+        message: "Service rate list item not found"
       });
     }
 
@@ -955,21 +975,21 @@ const generateUniqueIdsForExistingServices = async (req, res) => {
 
       // Get existing codes for this filter
       const existingCodes = targetArray.map(service => service.code).filter(code => code);
-      
+
       for (let i = 0; i < targetArray.length; i++) {
         const service = targetArray[i];
-        
+
         // Only generate unique ID if service doesn't have a code or has empty code
         if (!service.code || service.code.trim() === '') {
           const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name);
           const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber);
-          
-          service.code = uniqueId;
+
+          service.code = serviceCode;
           service.codeCreatedAt = Date.now();
           service.codeUpdatedAt = Date.now();
           service.filter = filter;
-          
-          existingCodes.push(uniqueId);
+
+          existingCodes.push(serviceCode);
           updatedCount++;
         }
       }

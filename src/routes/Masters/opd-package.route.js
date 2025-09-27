@@ -3,9 +3,10 @@ const OPDPackagesRouter = express.Router();
 const { OPDPackagesController } = require("../../controllers");
 const { handleToken } = require("../../utils/handleToken");
 
-// New route for dropdown (no authentication required for easier testing)
+// New route for dropdown (with authentication for consistency)
 OPDPackagesRouter.get(
   "/dropdown",
+  handleToken,
   OPDPackagesController.getOPDPackagesForDropdown
 );
 

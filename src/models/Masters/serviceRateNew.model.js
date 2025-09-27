@@ -1,5 +1,75 @@
 const mongoose = require("mongoose");
 
+const serviceSubSchema = new mongoose.Schema({
+  // ADDED: New fields for the distinct "Service Id"
+  serviceId: {
+    type: String,
+    default: ''
+  },
+  serviceIdCreatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  serviceIdUpdatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  // --- Existing fields below ---
+  serviceIdOfRelatedMaster: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    // Note: The 'ref' will be overridden in the main schema
+  },
+  rate: {
+    type: Number,
+    default: 0,
+  },
+  code: {
+    type: String,
+    default: "",
+  },
+  isValid: {
+    type: Boolean,
+    default: true,
+  },
+  rateCreatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  rateUpdatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  codeCreatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  codeUpdatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  codeCreatedBy: {
+    type: String,
+    default: "",
+  },
+  codeUpdatedBy: {
+    type: String,
+    default: "",
+  },
+  rateCreatedBy: {
+    type: String,
+    default: "",
+  },
+  rateUpdatedBy: {
+    type: String,
+    default: "",
+  },
+  filter: {
+    type: String,
+    default: "",
+  },
+}, { _id: false }); // Using a base schema simplifies repetition
+
 const serviceRateListSchema = new mongoose.Schema(
   {
     name: {
@@ -17,297 +87,45 @@ const serviceRateListSchema = new mongoose.Schema(
     },
     pathology: [
       {
-        serviceIdOfRelatedMaster: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "InvestigationPathologyMaster",
-          default: null,
-        },
-        rate: {
-          type: Number,
-          default: 0,
-        },
-        code: {
-          type: String,
-          default: "",
-        },
-        isValid: {
-          type: Boolean,
-          default: true,
-        },
-        rateCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        rateUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-
-        codeCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        codeUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        filter: {
-          type: String,
-          default: "",
-        },
-      },
+        ...serviceSubSchema.obj,
+        serviceIdOfRelatedMaster: { ...serviceSubSchema.obj.serviceIdOfRelatedMaster, ref: 'InvestigationPathologyMaster' }
+      }
     ],
     radiology: [
       {
-        serviceIdOfRelatedMaster: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "InvestigationRadiologyMaster",
-          default: null,
-        },
-        rate: {
-          type: Number,
-          default: 0,
-        },
-        code: {
-          type: String,
-          default: "",
-        },
-        isValid: {
-          type: Boolean,
-          default: true,
-        },
-        rateCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        rateUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-
-        codeCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        codeUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        filter: {
-          type: String,
-          default: "",
-        },
-      },
+        ...serviceSubSchema.obj,
+        serviceIdOfRelatedMaster: { ...serviceSubSchema.obj.serviceIdOfRelatedMaster, ref: 'InvestigationRadiologyMaster' }
+      }
     ],
     opdPackage: [
       {
-        serviceIdOfRelatedMaster: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "OPD_Packages_Master",
-          default: null,
-        },
-        rate: {
-          type: Number,
-          default: 0,
-        },
-        code: {
-          type: String,
-          default: "",
-        },
-        isValid: {
-          type: Boolean,
-          default: true,
-        },
-        rateCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        rateUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-
-        codeCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        codeUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        filter: {
-          type: String,
-          default: "",
-        },
-      },
+        ...serviceSubSchema.obj,
+        serviceIdOfRelatedMaster: { ...serviceSubSchema.obj.serviceIdOfRelatedMaster, ref: 'OPD_Packages_Master' }
+      }
     ],
     otherServices: [
       {
-        serviceIdOfRelatedMaster: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ServiceDetailsMaster",
-          default: null,
-        },
-        rate: {
-          type: Number,
-          default: 0,
-        },
-        code: {
-          type: String,
-          default: "",
-        },
-        isValid: {
-          type: Boolean,
-          default: true,
-        },
-        rateCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        rateUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-
-        codeCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        codeUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        filter: {
-          type: String,
-          default: "",
-        },
-      },
+        ...serviceSubSchema.obj,
+        serviceIdOfRelatedMaster: { ...serviceSubSchema.obj.serviceIdOfRelatedMaster, ref: 'ServiceDetailsMaster' }
+      }
     ],
     opdConsultant: [
       {
-        serviceIdOfRelatedMaster: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "opdConsultantService",
-          default: null,
-        },
-        rate: {
-          type: Number,
-          default: 0,
-        },
-        code: {
-          type: String,
-          default: "",
-        },
-        isValid: {
-          type: Boolean,
-          default: true,
-        },
-        rateCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        rateUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-
-        codeCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        codeUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        filter: {
-          type: String,
-          default: "",
-        },
-      },
+        ...serviceSubSchema.obj,
+        serviceIdOfRelatedMaster: { ...serviceSubSchema.obj.serviceIdOfRelatedMaster, ref: 'opdConsultantService' }
+      }
     ],
     otherDiagnostics: [
       {
-        serviceIdOfRelatedMaster: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "OtherDiagnosticsMaster",
-          default: null,
-        },
-        rate: {
-          type: Number,
-          default: 0,
-        },
-        code: {
-          type: String,
-          default: "",
-        },
-        isValid: {
-          type: Boolean,
-          default: true,
-        },
-        rateCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        rateUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-
-        codeCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        codeUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        filter: {
-          type: String,
-          default: "",
-        },
-      },
+        ...serviceSubSchema.obj,
+        serviceIdOfRelatedMaster: { ...serviceSubSchema.obj.serviceIdOfRelatedMaster, ref: 'OtherDiagnosticsMaster' }
+      }
     ],
     pathologyProfiles: [
       {
-        filter: {
-          type: String,
-          default: "",
-        },
-        serviceIdOfRelatedMaster: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ProfileMasterModel",
-          default: null,
-        },
-        rate: {
-          type: Number,
-          default: 0,
-        },
-        code: {
-          type: String,
-          default: "",
-        },
-        isValid: {
-          type: Boolean,
-          default: true,
-        },
-        rateCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        rateUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-
-        codeCreatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        codeUpdatedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
+        ...serviceSubSchema.obj,
+        serviceIdOfRelatedMaster: { ...serviceSubSchema.obj.serviceIdOfRelatedMaster, ref: 'ProfileMasterModel' }
+      }
     ],
     delete: {
       type: Boolean,
@@ -316,10 +134,17 @@ const serviceRateListSchema = new mongoose.Schema(
   },
   {
     versionKey: false,
-    timestamps: true, // Global `createdAt` and `updatedAt` for the document
+    timestamps: true,
   }
 );
 
+
+const ServiceRateList = mongoose.model(
+  "service-modal-list",
+  serviceRateListSchema
+);
+
+// This second schema seems unrelated to the main logic, but is included as it was in the original code.
 const serviceRateSchema = new mongoose.Schema(
   {
     billGroupName: {
@@ -344,9 +169,5 @@ const serviceRateSchema = new mongoose.Schema(
   }
 );
 
-const ServiceRateList = mongoose.model(
-  "service-modal-list",
-  serviceRateListSchema
-);
 const ServiceModel = mongoose.model("service-modal-rate", serviceRateSchema);
 module.exports = { ServiceRateList, ServiceModel };

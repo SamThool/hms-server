@@ -9,9 +9,21 @@ const ipdSubformSchema = new mongoose.Schema(
     },
     formId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Form", // reference to your main Form collection
+      ref: "Form",
       required: true,
     },
+    images: [
+      {
+        imagename: {
+          type: String,
+          required: true,
+        },
+        image: {
+          type: String, // can store URL, path, or base64 string
+          required: true,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

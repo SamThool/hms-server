@@ -923,7 +923,7 @@ const getOpdDashboardDataOfConsultant = async (req, res) => {
         } else {
           acc.checked++;
         }
-        console.log("----------------------------", acc);
+
         return acc;
       },
       { checked: 0, waiting: 0 }
@@ -1077,7 +1077,6 @@ const getOpdDashboardGraphData = async (req, res) => {
 };
 
 const updatePatientStatus = async (req, res) => {
-  console.log("updatePatientStatus-----------");
   try {
     const { id } = req.params;
     const { status, patientInTime } = req.body;

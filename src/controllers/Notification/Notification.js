@@ -39,7 +39,6 @@ const createNotification = async (req, res) => {
   }
 };
 
-// ------------------------------------------------------------------------
 const getNotifications = async (req, res) => {
   try {
     const { consultantId } = req.params;

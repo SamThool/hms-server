@@ -4,6 +4,8 @@ const path = require("path");
 
 const {
   CreateRegistrationDetail,
+  dischargePatient,
+  transferPatient,
   getAllRegisteration,
   updateRegistation,
   findBedPatient,
@@ -65,8 +67,6 @@ IPDPatientRouter.post(
   }
 );
 
-IPDPatientRouter.get("/findBedPatient/:bedMasterId/:bedName", findBedPatient);
-
 IPDPatientRouter.get("/", getAllRegisteration);
 IPDPatientRouter.get("/ipd-uhid-reg", getUhidAndRegNo);
 
@@ -120,7 +120,6 @@ IPDPatientRouter.get("/room-bed", async (req, res) => {
   try {
     const { category, type } = req.query;
 
-    console.log("--------------", req.query);
     if (!category || !type) {
       return res
         .status(400)
@@ -178,5 +177,11 @@ IPDPatientRouter.get("/room-bed", async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 });
+
+IPDPatientRouter.get("/findBedPatient/:bedMasterId/:bedName", findBedPatient);
+
+IPDPatientRouter.post("/Discharge/:id", dischargePatient);
+
+IPDPatientRouter.post("/transfer/:id", transferPatient);
 
 module.exports = IPDPatientRouter;

@@ -2063,8 +2063,6 @@ const addPersnalHistory = async (req, res) => {
     });
 
     if (existingEntry) {
-      console.log("in exist ----------");
-
       existingEntry.answerType = openData.answerType;
       existingEntry.problem = openData.problem;
       existingEntry.objective = openData.objective || [];

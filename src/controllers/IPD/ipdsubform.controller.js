@@ -95,9 +95,56 @@ const getSubformsByFormId = async (req, res) => {
   }
 };
 
+// ✅ Add Image to Subform
+const addImageToSubform = async (req, res) => {
+  try {
+    const { id } = req.params; // subform id
+    const { imagename, image } = req.body; // image data
+
+    if (!imagename || !image) {
+      return res
+        .status(400)
+        .json({ message: "Both imagename and image are required" });
+    }
+
+    const updatedSubform = await IPDSubform.findByIdAndUpdate(
+      id,
+      { $push: { images: { imagename, image } } },
+      { new: true }
+    );
+
+    if (!updatedSubform) {
+      return res.status(404).json({ message: "Subform not found" });
+    }
+
+    res.json({
+      message: "Image added successfully",
+      subform: updatedSubform,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error adding image", error: error.message });
+  }
+};
+
+const getImageToSubform = async (req, res) => {
+  try {
+    const subform = await IPDSubform.findById(req.params.id);
+    if (!subform) return res.status(404).json({ message: "Subform not found" });
+    res.json({ subform });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching images", error: err.message });
+  }
+};
+
 module.exports = {
   createSubform,
   updateSubform,
+  getImageToSubform,
   deleteSubform,
   getSubformsByFormId,
+  addImageToSubform,
 };
