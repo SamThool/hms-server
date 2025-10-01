@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const IpdFormModel = require("../../models/IPD/ipdform.model");
 const IPDSubform = require("../../models/IPD/ipdsubform.model.js");
 
@@ -35,6 +36,39 @@ const addForm = async (req, res) => {
   }
 };
 
+const reorderSubforms = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subForms } = req.body;
+
+    console.log("📥 Incoming formId:", id);
+    console.log("📥 Incoming subForms:", subForms);
+
+    // Cast to ObjectIds
+    const reordered = subForms.map((id, index) => {
+      console.log(`🔄 Converting subForm[${index}] = ${id}`);
+      return new mongoose.Types.ObjectId(id);
+    });
+
+    console.log("✅ Reordered ObjectIds:", reordered);
+
+    const form = await IpdFormModel.findByIdAndUpdate(
+      id,
+      { subForms: reordered },
+      { new: true }
+    ).populate("subForms");
+
+    console.log("📤 Updated form:", JSON.stringify(form, null, 2));
+
+    res.json({ message: "Subforms reordered", form });
+  } catch (error) {
+    console.error("❌ Error in reorderSubforms:", error);
+    res
+      .status(500)
+      .json({ message: "Error reordering subforms", error: error.message });
+  }
+};
+
 // // Get all IPD Forms
 // const getAllForms = async (req, res) => {
 //   try {
@@ -58,21 +92,22 @@ const addForm = async (req, res) => {
 const getAllForms = async (req, res) => {
   try {
     // 1. Fetch all forms
-    const forms = await IpdFormModel.find().sort({ createdAt: -1 });
+    const forms = await IpdFormModel.find()
+      .sort({ createdAt: -1 })
+      .populate("subForms", "_id subformName type");
 
-    // 2. For each form, fetch related subforms
-    const formsWithSubforms = await Promise.all(
-      forms.map(async (form) => {
-        const subForms = await IPDSubform.find({
-          formId: form._id,
-        }).select("_id subformName"); // adjust fields as needed
-        return {
-          ...form.toObject(), // convert Mongoose doc to plain object
-          subForms, // attach the subforms array
-        };
-      })
-    );
-
+    // 2. Convert Mongoose docs to plain objects and preserve subform order
+    const formsWithSubforms = forms.map((form) => {
+      const orderedSubforms = form.subForms.map((sf) => ({
+        _id: sf._id,
+        subformName: sf.subformName,
+        type: sf.type, // include type
+      }));
+      return {
+        ...form.toObject(),
+        subForms: orderedSubforms,
+      };
+    });
     // 3. Send response
     res.status(200).json({
       success: true,
@@ -118,4 +153,4 @@ const deleteForm = async (req, res) => {
   }
 };
 
-module.exports = { addForm, getAllForms, deleteForm };
+module.exports = { addForm, getAllForms, deleteForm, reorderSubforms };

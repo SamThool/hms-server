@@ -12,6 +12,12 @@ const ipdSubformSchema = new mongoose.Schema(
       ref: "Form",
       required: true,
     },
+    type: {
+      type: String,
+      required: true,
+      enum: ["emoji", "data", "tableLR", "tableTB", "para"], // short and simple
+      default: "data",
+    },
     images: [
       {
         imagename: {
@@ -19,9 +25,21 @@ const ipdSubformSchema = new mongoose.Schema(
           required: true,
         },
         image: {
-          type: String, // can store URL, path, or base64 string
+          type: String,
           required: true,
         },
+      },
+    ],
+    table: [
+      {
+        columnName: {
+          type: String,
+        },
+        options: [
+          {
+            type: String,
+          },
+        ],
       },
     ],
   },

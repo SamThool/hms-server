@@ -7,6 +7,8 @@ const {
   getSubformsByFormId,
   addImageToSubform,
   getImageToSubform,
+  getColumns,
+  saveColumns,
 } = require("../../controllers/IPD/ipdsubform.controller");
 
 router.post("/", createSubform); // Create Subform
@@ -19,4 +21,6 @@ router.post("/:id/add-image", addImageToSubform);
 // GET /subform/:id/images
 router.get("/:id/images", getImageToSubform);
 
+router.get("/columns/:subformId", getColumns); // Get all columns & options
+router.put("/columns/:subformId", saveColumns);
 module.exports = router;

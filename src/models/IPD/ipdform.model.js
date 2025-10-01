@@ -14,7 +14,8 @@ const ipdFormSchema = new mongoose.Schema(
     ],
     subForms: [
       {
-        type: String, // or mongoose.Schema.Types.ObjectId if referencing other forms
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "IPDSubform",
       },
     ],
   },
