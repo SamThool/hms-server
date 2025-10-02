@@ -15,7 +15,7 @@ const ipdSubformSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["emoji", "data", "tableLR", "tableTB", "para"], // short and simple
+      enum: ["emoji", "data", "tableLR", "tableTB", "para"],
       default: "data",
     },
     images: [

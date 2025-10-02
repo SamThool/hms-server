@@ -11,32 +11,70 @@ const {
   getParagraphs,
   editParagraph,
   deleteParagraph,
+  saveTable,
+  getTables,
+  deleteTable,
+  getPatientEMR,
 } = require("../../controllers/IPD/ipdPatientEMRController");
 
 const router = express.Router();
 
-// Add EMR entry for patient
+router.get("/table/:patientId", getTables); // Get all tables
+
+/**
+ * -------------------------
+ * Paragraph Routes
+ * -------------------------
+ */
+
+// Get all paragraphs for a patient
+router.get("/paragraph/:patientId", getParagraphs);
+
+// Add a new paragraph
+router.post("/paragraph/add", addParagraph);
+
+// Edit a paragraph by ID
+router.put("/paragraph/edit/:paragraphId", editParagraph);
+
+// Delete a paragraph by ID
+router.delete("/paragraph/delete/:paragraphId", deleteParagraph);
+
+/**
+ * -------------------------
+ * EMR Routes
+ * -------------------------
+ */
+
+// Add a new EMR entry for a patient
 router.post("/add", addEMR);
 
-// Add Emoji entry for patient
-router.post("/emoji/add", addEmoji);
-
-// Delete EMR entry by patientId + emrId
+// Delete an EMR entry by patientId + emrId
 router.delete("/delete/:patientId/:emrId", deleteEMR);
 
-// Get EMR by PatientId
+// Get EMR by patientId and subFormId
 router.get("/:patientId", getEMRByPatientId);
 
-// Get all emojis for a patient
-router.get("/emoji/:patientId", getEmojisByPatientId);
+/**
+ * -------------------------
+ * Emoji Routes
+ * -------------------------
+ */
 
-// routes/ipdPatientEMR.js
+// Add an emoji entry for a patient
+router.post("/emoji/add", addEmoji);
+
+// Get all emojis for a patient + subFormId
+router.get("/emoji/:patientId/:subFormId", getEmojisByPatientId);
+
+// Delete an emoji entry by patientId + emojiId
 router.delete("/emoji/delete/:patientId/:emojiId", deleteEmoji);
 
-// Paragraph routes
-router.post("/paragraph/add", addParagraph);
-router.get("/paragraph/:patientId", getParagraphs);
-router.put("/paragraph/edit/:paragraphId", editParagraph);
-router.delete("/paragraph/delete/:paragraphId", deleteParagraph);
+/**
+ * -------------------------
+ * Table Routes
+ * -------------------------
+ */
+router.post("/table/save", saveTable); // Save or update table
+router.delete("/table/delete/:patientId/:tableId", deleteTable); // Delete table
 
 module.exports = router;

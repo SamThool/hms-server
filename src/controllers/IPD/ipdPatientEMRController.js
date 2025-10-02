@@ -1,9 +1,11 @@
 // controllers/ipdPatientEMRController.js
+const { default: mongoose } = require("mongoose");
 const IPDPatientEMR = require("../../models/IPD/IPDPatientEMR");
 
 const addEMR = async (req, res) => {
   try {
-    const { patientId, consultantName, consultantId, data } = req.body;
+    const { patientId, consultantName, consultantId, data, subFormId } =
+      req.body;
 
     let patientEMR = await IPDPatientEMR.findOne({ patientId });
 
@@ -12,6 +14,7 @@ const addEMR = async (req, res) => {
       consultantName,
       consultantId,
       data,
+      subFormId,
       updatedAt: new Date(),
     };
 
@@ -83,7 +86,8 @@ const getEMRByPatientId = async (req, res) => {
 // Add Emoji for a patient
 const addEmoji = async (req, res) => {
   try {
-    const { patientId, emoji, label, consultantId, consultantName } = req.body;
+    const { patientId, emoji, label, consultantId, consultantName, subFormId } =
+      req.body;
 
     if (!patientId || !emoji || !consultantId || !consultantName) {
       return res.status(400).json({
@@ -94,13 +98,13 @@ const addEmoji = async (req, res) => {
 
     // Find patient EMR
     let patientEMR = await IPDPatientEMR.findOne({ patientId });
-
     // Create emoji entry
     const newEmoji = {
       emoji,
       label: label || "",
       consultantId,
       consultantName,
+      subFormId,
       createdAt: new Date(),
     };
 
@@ -171,7 +175,8 @@ const deleteEmoji = async (req, res) => {
 // Add paragraph
 const addParagraph = async (req, res) => {
   try {
-    const { patientId, text, consultantId, consultantName } = req.body;
+    const { patientId, text, consultantId, consultantName, subFormId } =
+      req.body;
     if (!patientId || !text || !consultantId || !consultantName) {
       return res.status(400).json({ message: "Missing required fields" });
     }
@@ -181,6 +186,7 @@ const addParagraph = async (req, res) => {
       text,
       consultantId,
       consultantName,
+      subFormId,
       createdAt: new Date(),
     };
 
@@ -201,11 +207,21 @@ const addParagraph = async (req, res) => {
 
 // Get paragraphs
 const getParagraphs = async (req, res) => {
+  console.log("------------------------------------------------");
   try {
     const { patientId } = req.params;
-    const patientEMR = await IPDPatientEMR.findOne({ patientId });
+
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      return res.status(400).json({ error: "Invalid patientId" });
+    }
+
+    const patientEMR = await IPDPatientEMR.findOne({
+      patientId: new mongoose.Types.ObjectId(patientId),
+    });
     res.status(200).json({ paragraphs: patientEMR?.paragraphs || [] });
   } catch (err) {
+    console.log(err);
+
     res.status(500).json({ error: err.message });
   }
 };
@@ -255,6 +271,118 @@ const deleteParagraph = async (req, res) => {
   }
 };
 
+// Replace or save a table
+const saveTable = async (req, res) => {
+  try {
+    const {
+      patientId,
+      tableId,
+      consultantId,
+      consultantName,
+      subFormId,
+      type,
+      columns,
+      rows,
+    } = req.body;
+
+    if (
+      !patientId ||
+      !consultantId ||
+      !consultantName ||
+      !type ||
+      !columns ||
+      !rows
+    ) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    let patientEMR = await IPDPatientEMR.findOne({ patientId });
+
+    const newTable = {
+      _id: tableId || undefined, // keep existing _id if editing
+      type, // "LTR" or "TTB"
+      consultantId,
+      consultantName,
+      subFormId,
+      columns,
+      rows,
+      createdAt: new Date(),
+    };
+
+    if (!patientEMR) {
+      // create new patient EMR record
+      patientEMR = new IPDPatientEMR({
+        patientId,
+        tables: [newTable],
+      });
+    } else {
+      if (tableId) {
+        // Replace existing table
+        const tableIndex = patientEMR.tables.findIndex(
+          (t) => t._id.toString() === tableId
+        );
+        if (tableIndex !== -1) {
+          patientEMR.tables[tableIndex] = newTable;
+        } else {
+          // TableId not found, push as new table
+          patientEMR.tables.push(newTable);
+        }
+      } else {
+        // No tableId, push as new table
+        patientEMR.tables.push(newTable);
+      }
+    }
+
+    await patientEMR.save();
+
+    res
+      .status(200)
+      .json({ message: "Table saved successfully", table: newTable });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get all tables by patientId
+const getTables = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const patientEMR = await IPDPatientEMR.findOne({ patientId }).select(
+      "tables"
+    );
+
+    if (!patientEMR || patientEMR.tables.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No tables found for this patient" });
+    }
+
+    res.status(200).json({ tables: patientEMR.tables });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Delete a table by Id
+const deleteTable = async (req, res) => {
+  try {
+    const { patientId, tableId } = req.params;
+    const patientEMR = await IPDPatientEMR.findOne({ patientId });
+
+    if (!patientEMR)
+      return res.status(404).json({ message: "Patient not found" });
+
+    patientEMR.tables = patientEMR.tables.filter(
+      (t) => t._id.toString() !== tableId
+    );
+    await patientEMR.save();
+
+    res.status(200).json({ message: "Table deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   addEMR,
   deleteEMR,
@@ -266,4 +394,7 @@ module.exports = {
   getParagraphs,
   editParagraph,
   deleteParagraph,
+  saveTable,
+  getTables,
+  deleteTable,
 };

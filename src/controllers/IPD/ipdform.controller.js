@@ -94,14 +94,15 @@ const getAllForms = async (req, res) => {
     // 1. Fetch all forms
     const forms = await IpdFormModel.find()
       .sort({ createdAt: -1 })
-      .populate("subForms", "_id subformName type");
+      .populate("subForms");
 
     // 2. Convert Mongoose docs to plain objects and preserve subform order
     const formsWithSubforms = forms.map((form) => {
       const orderedSubforms = form.subForms.map((sf) => ({
         _id: sf._id,
         subformName: sf.subformName,
-        type: sf.type, // include type
+        type: sf.type,
+        table: sf.table,
       }));
       return {
         ...form.toObject(),
