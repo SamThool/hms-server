@@ -207,7 +207,7 @@ const addParagraph = async (req, res) => {
 
 // Get paragraphs
 const getParagraphs = async (req, res) => {
-  console.log("------------------------------------------------");
+  // console.log("------------------------------------------------");
   try {
     const { patientId } = req.params;
 

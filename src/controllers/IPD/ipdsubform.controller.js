@@ -187,7 +187,7 @@ const saveColumns = async (req, res) => {
   try {
     const { subformId } = req.params;
     const { columns } = req.body;
-    console.log("----------------------", columns);
+    // console.log("----------------------", columns);
 
     if (!Array.isArray(columns)) {
       return res.status(400).json({ message: "columns must be an array" });

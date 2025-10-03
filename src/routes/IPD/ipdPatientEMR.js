@@ -14,12 +14,15 @@ const {
   saveTable,
   getTables,
   deleteTable,
-  getPatientEMR,
 } = require("../../controllers/IPD/ipdPatientEMRController");
 
 const router = express.Router();
 
 router.get("/table/:patientId", getTables); // Get all tables
+
+router.get("/paragraph/:patientId", getParagraphs);
+router.get("/:patientId/:subform", getEMRByPatientId);
+router.get("/emoji/:patientId/:subFormId", getEmojisByPatientId);
 
 /**
  * -------------------------
@@ -28,7 +31,6 @@ router.get("/table/:patientId", getTables); // Get all tables
  */
 
 // Get all paragraphs for a patient
-router.get("/paragraph/:patientId", getParagraphs);
 
 // Add a new paragraph
 router.post("/paragraph/add", addParagraph);
@@ -52,7 +54,6 @@ router.post("/add", addEMR);
 router.delete("/delete/:patientId/:emrId", deleteEMR);
 
 // Get EMR by patientId and subFormId
-router.get("/:patientId", getEMRByPatientId);
 
 /**
  * -------------------------
@@ -64,7 +65,6 @@ router.get("/:patientId", getEMRByPatientId);
 router.post("/emoji/add", addEmoji);
 
 // Get all emojis for a patient + subFormId
-router.get("/emoji/:patientId/:subFormId", getEmojisByPatientId);
 
 // Delete an emoji entry by patientId + emojiId
 router.delete("/emoji/delete/:patientId/:emojiId", deleteEmoji);
