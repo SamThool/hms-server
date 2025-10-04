@@ -25,6 +25,8 @@ adminRouter.put("/unblock", handleToken, adminController.unblockAdmin);
 
 adminRouter.get("/:id", handleToken, adminController.getAdmin);
 
+adminRouter.post("/auth/send-otp", adminController.verifyAndSendOtp);
+
 adminRouter.post(
   "/get-dashboard-info",
   handleToken,
@@ -43,11 +45,15 @@ adminRouter.get(
   handleToken,
   adminController.fetchUserSuspensionStatus
 );
+
 adminRouter.post(
   "/update-user-suspension-status",
   handleToken,
   adminController.updateUserSuspensionStatus
 );
+
 adminRouter.get("/user-rights/:id", adminController.getSystemRightsById);
+
+adminRouter.post("/reset-password", adminController.resetPasswordWithOtp);
 
 module.exports = adminRouter;

@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const PatientDetails = require("../models/Masters/patientAppointment.model");
 const jwt = require("jsonwebtoken");
 const OpdPatientModel = require("../models/appointment-confirm/opdPatient.model");
@@ -9,6 +10,7 @@ const { CompanySetupModel } = require("../models");
 require("dotenv").config();
 const httpStatus = require("http-status");
 const { DepartmentSetupModel } = require("../models");
+const nodemailer = require("nodemailer");
 
 const {
   Administrative,
@@ -620,6 +622,93 @@ const getDashboardInfo = async (req, res) => {
   }
 };
 
+const verifyAndSendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const admin = await AdminModel.findOne({ email: email });
+    if (!admin) {
+      return res.status(404).json({ msg: "Email not found" });
+    }
+    console.log(email);
+
+    // generate otp
+    const otp = crypto.randomInt(100000, 999999);
+
+    // save otp with expiry
+    admin.resetOtp = otp;
+    admin.resetOtpExpires = Date.now() + 10 * 60 * 1000; // valid for 10 mins
+    await admin.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail", // simpler than writing smtp.gmail.com
+      auth: {
+        user: "medigologic@gmail.com",
+        pass: "lbii siuy fdrw rxjy", // not your Gmail password, use App Password
+      },
+    });
+
+    const mailOptions = {
+      from: "medigologic@gmail.com",
+      to: email,
+      subject: "Your OTP for Password Reset",
+      text: `Your OTP is: ${otp}. Valid for 10 minutes.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({
+      success: true,
+      msg: `Otp Send on ${email}`,
+    });
+  } catch (error) {
+    console.error("Error sending otp for forget password:", error);
+    return res.status(500).json({ msg: "Server error" });
+  }
+};
+
+const resetPasswordWithOtp = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    console.log(otp);
+    console.log(email);
+
+    // ✅ Find admin by email
+    const admin = await AdminModel.findOne({ email: email });
+    if (!admin) {
+      return res.status(404).json({ msg: "Admin not found" });
+    }
+
+    // ✅ Check OTP
+    if (!admin.resetOtp || !admin.resetOtpExpires) {
+      return res.status(400).json({ msg: "OTP not requested or expired" });
+    }
+
+    if (String(admin.resetOtp) !== String(otp)) {
+      return res.status(400).json({ msg: "Invalid OTP" });
+    }
+
+    if (Date.now() > admin.resetOtpExpires) {
+      return res.status(400).json({ msg: "OTP has expired" });
+    }
+
+    // ✅ Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    admin.password = hashedPassword;
+
+    // ✅ Clear OTP fields
+    admin.resetOtp = undefined;
+    admin.resetOtpExpires = undefined;
+
+    await admin.save();
+
+    return res.status(200).json({ msg: "Password reset successfully" });
+  } catch (error) {
+    console.error("Error resetting password with OTP:", error);
+    return res.status(500).json({ msg: "Server error" });
+  }
+};
+
 module.exports = {
   registerAdmin,
   loginAdmin,
@@ -634,4 +723,6 @@ module.exports = {
   updateUserSuspensionStatus,
   getSystemRightsById,
   getDashboardInfo,
+  verifyAndSendOtp,
+  resetPasswordWithOtp,
 };
