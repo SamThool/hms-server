@@ -408,8 +408,8 @@ const updateMassServiceRateThroughPathology = async (req, res) => {
         // ✅ Not existing → create new
         // Generate unique ID for new service
         const existingCodes = targetArray.map(service => service.code).filter(code => code);
-        const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name);
-        const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber);
+        const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name, filter);
+        const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber, filter);
 
         const newService = {
           serviceIdOfRelatedMaster,
@@ -981,15 +981,15 @@ const generateUniqueIdsForExistingServices = async (req, res) => {
 
         // Only generate unique ID if service doesn't have a code or has empty code
         if (!service.code || service.code.trim() === '') {
-          const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name);
-          const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber);
+          const nextSequenceNumber = getNextSequenceNumber(existingCodes, serviceRateListItem.name, filter);
+          const uniqueId = generateUniqueId(serviceRateListItem.name, nextSequenceNumber, filter);
 
-          service.code = serviceCode;
+          service.code = uniqueId;
           service.codeCreatedAt = Date.now();
           service.codeUpdatedAt = Date.now();
           service.filter = filter;
 
-          existingCodes.push(serviceCode);
+          existingCodes.push(uniqueId);
           updatedCount++;
         }
       }

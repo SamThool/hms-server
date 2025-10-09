@@ -13,7 +13,7 @@ InvestigationPathologyMasterRoute.put('/update-rate/:id', handleToken,Investigat
 
 InvestigationPathologyMasterRoute.put('/delete/:id', handleToken,InvestigationPathologyMasterController.deleteInvestigation);
 
-InvestigationPathologyMasterRoute.post('/import', handleToken,InvestigationPathologyMasterController.importTests);
+InvestigationPathologyMasterRoute.post('/import/:id', handleToken,InvestigationPathologyMasterController.importTests);
 
 
 

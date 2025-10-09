@@ -2,9 +2,10 @@
  * Utility function to generate unique IDs for different rate lists
  * @param {string} rateListName - The name of the rate list (e.g., "CGSH", "Mediassist")
  * @param {number} sequenceNumber - The sequence number for this rate list
- * @returns {string} - The generated unique ID (e.g., "CG00001", "MR00002")
+ * @param {string} filter - The filter type (e.g., "pathology", "pathologyProfiles")
+ * @returns {string} - The generated unique ID (e.g., "CG00001", "CGPT0001", "CGPP0001")
  */
-const generateUniqueId = (rateListName, sequenceNumber) => {
+const generateUniqueId = (rateListName, sequenceNumber, filter = null) => {
   // Define prefix mappings for different rate list names
   const prefixMap = {
     'CGSH': 'CG',
@@ -64,10 +65,29 @@ const generateUniqueId = (rateListName, sequenceNumber) => {
     prefix = rateListName?.substring(0, 2)?.toUpperCase() || 'SR';
   }
 
-  // Format the sequence number with leading zeros (5 digits)
-  const formattedSequence = sequenceNumber.toString().padStart(5, '0');
+  // Add filter-specific suffix for different service types
+  let suffix = '';
+  if (filter === 'pathology') {
+    suffix = 'PT';
+  } else if (filter === 'pathologyProfiles') {
+    suffix = 'PP';
+  } else if (filter === 'radiology') {
+    suffix = 'R';
+  } else if (filter === 'opdPackage') {
+    suffix = 'OP';
+  } else if (filter === 'otherServices') {
+    suffix = 'OS';
+  } else if (filter === 'opdConsultant') {
+    suffix = 'OC';
+  } else if (filter === 'otherDiagnostics') {
+    suffix = 'OD';
+  }
+
+  // Format the sequence number with leading zeros (4 digits for specific service types, 5 for others)
+  const digitCount = (filter === 'pathology' || filter === 'pathologyProfiles' || filter === 'radiology' || filter === 'opdPackage' || filter === 'otherServices' || filter === 'opdConsultant' || filter === 'otherDiagnostics') ? 4 : 5;
+  const formattedSequence = sequenceNumber.toString().padStart(digitCount, '0');
   
-  return `${prefix}${formattedSequence}`;
+  return `${prefix}${suffix}${formattedSequence}`;
 };
 
 /**
@@ -92,9 +112,10 @@ const parseUniqueId = (uniqueId) => {
  * Get the next sequence number for a rate list
  * @param {Array} existingCodes - Array of existing codes for the rate list
  * @param {string} rateListName - The name of the rate list
+ * @param {string} filter - The filter type (e.g., "pathology", "pathologyProfiles")
  * @returns {number} - The next sequence number
  */
-const getNextSequenceNumber = (existingCodes, rateListName) => {
+const getNextSequenceNumber = (existingCodes, rateListName, filter = null) => {
   if (!existingCodes || !Array.isArray(existingCodes)) {
     return 1;
   }
@@ -152,12 +173,46 @@ const getNextSequenceNumber = (existingCodes, rateListName) => {
 
   const prefix = prefixMap[rateListName?.toUpperCase()] || rateListName?.substring(0, 2)?.toUpperCase() || 'SR';
 
+  // Add filter-specific suffix for different service types
+  let suffix = '';
+  if (filter === 'pathology') {
+    suffix = 'PT';
+  } else if (filter === 'pathologyProfiles') {
+    suffix = 'PP';
+  } else if (filter === 'radiology') {
+    suffix = 'R';
+  } else if (filter === 'opdPackage') {
+    suffix = 'OP';
+  } else if (filter === 'otherServices') {
+    suffix = 'OS';
+  } else if (filter === 'opdConsultant') {
+    suffix = 'OC';
+  } else if (filter === 'otherDiagnostics') {
+    suffix = 'OD';
+  }
+
+  // Create the expected prefix pattern
+  const expectedPrefix = `${prefix}${suffix}`;
+
   // Find the highest sequence number for this prefix
   let maxSequence = 0;
   
   existingCodes.forEach(code => {
-    if (code && typeof code === 'string' && code.startsWith(prefix)) {
-      const { sequenceNumber } = parseUniqueId(code);
+    if (code && typeof code === 'string' && code.startsWith(expectedPrefix)) {
+      // For pathology services, extract sequence from the end (4 digits)
+      // For others, use the existing logic
+      let sequenceNumber = 0;
+      
+      if (filter === 'pathology' || filter === 'pathologyProfiles' || filter === 'radiology' || filter === 'opdPackage' || filter === 'otherServices' || filter === 'opdConsultant' || filter === 'otherDiagnostics') {
+        // Extract last 4 digits for specific service types
+        const sequencePart = code.substring(expectedPrefix.length);
+        sequenceNumber = parseInt(sequencePart, 10) || 0;
+      } else {
+        // Use existing logic for other services
+        const { sequenceNumber: parsedSequence } = parseUniqueId(code);
+        sequenceNumber = parsedSequence;
+      }
+      
       if (sequenceNumber > maxSequence) {
         maxSequence = sequenceNumber;
       }

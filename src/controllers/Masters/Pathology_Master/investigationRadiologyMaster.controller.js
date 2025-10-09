@@ -2,6 +2,9 @@ const httpStatus = require("http-status");
 const { InvestigationPathologyMasterModel } = require("../../../models");
 const { ProfileMasterModel } = require("../../../models");
 const mongoose = require("mongoose");
+const {
+  ServiceRateList,
+} = require("../../../models/Masters/serviceRateNew.model");
 
 // Function to sanitize ObjectId values
 const sanitizeObjectId = (value) => {
@@ -232,18 +235,39 @@ const deleteInvestigation = async (req, res) => {
   }
 };
 
+function mapTestDataToPathology(raw) {
+  return {
+    serviceId: raw["Service Id"] || "",
+    code: raw["Code"] ? raw["Code"].toString() : "",
+    rate: raw["Rate"] ? Number(raw["Rate"]) : 0,
+    filter: raw["Sub Department"] || "",
+
+    // Optional metadata
+    codeCreatedBy: "system",  // you can set userId here
+    rateCreatedBy: "system",
+    codeUpdatedBy: "system",
+    rateUpdatedBy: "system",
+
+    // Related master can be linked later if needed
+    serviceIdOfRelatedMaster: raw._id || null,
+  };
+}
+
+
 const importTests = async (req, res) => {
   try {
     const testsData = req.body;
-
+    const {id} = req.params;
+    console.log('testsData', testsData);
     if (!testsData || testsData.length === 0) {
       return res.status(400).json({ msg: "No test data provided" });
     }
-
-    const createdTests = await InvestigationPathologyMasterModel.insertMany(
-      testsData
+const mappedTests = testsData.map(mapTestDataToPathology);
+   const createdTests = await ServiceRateList.findByIdAndUpdate(
+  id,
+  { $push: { pathology: mappedTests } }, // append into pathology array
+  { new: true } // return updated document
     );
-
     return res.status(201).json({
       msg: "Tests imported successfully",
       data: createdTests,
@@ -254,7 +278,6 @@ const importTests = async (req, res) => {
   }
 };
 
-/* below apis are for profile master */
 
 const createProfile = async (req, res) => {
   try {
