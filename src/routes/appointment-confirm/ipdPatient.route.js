@@ -5,7 +5,7 @@ const path = require("path");
 const {
   CreateRegistrationDetail,
   dischargePatient,
-  transferPatient,
+
   getAllRegisteration,
   updateRegistation,
   findBedPatient,
@@ -181,7 +181,5 @@ IPDPatientRouter.get("/room-bed", async (req, res) => {
 IPDPatientRouter.get("/findBedPatient/:bedMasterId/:bedName", findBedPatient);
 
 IPDPatientRouter.post("/Discharge/:id", dischargePatient);
-
-IPDPatientRouter.post("/transfer/:id", transferPatient);
 
 module.exports = IPDPatientRouter;

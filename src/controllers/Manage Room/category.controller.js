@@ -67,10 +67,13 @@ const getAllCategoryMaster = async (req, res) => {
 
     const userContext = await getUserContext(user.role, req.user.branchId);
 
+    console.log("userContext", userContext);
+
     const categoryMasters = await CategoryMasterModel.find({
       delete: false,
       user: userContext,
     });
+    console.log("-----------------------------", categoryMasters);
     res.status(httpStatus.OK).json({ data: categoryMasters });
   } catch (err) {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error: err.message });

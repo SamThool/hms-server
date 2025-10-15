@@ -254,103 +254,6 @@ const dischargePatient = async (req, res) => {
   }
 };
 
-const transferPatient = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { transferType, newBedId, newBed, ...transferData } = req.body;
-
-    console.log(req.body);
-
-    const patient = await IpdPatientModel.findById(id);
-    if (!patient) {
-      return res.status(404).json({ message: "Patient not found" });
-    }
-
-    // BED CHANGE
-    if (transferType === "Bed Change") {
-      // store previous bed info
-      const oldData = {
-        previousBed: patient.bed,
-        previousOccupiedBedId: patient.occupiedBedId,
-        transferDate: transferData.transferDate,
-        transferTime: transferData.transferTime,
-        transferReason: transferData.transferReason,
-        transferType,
-        createdAt: new Date(),
-      };
-
-      // push old data to transfer array
-      patient.transfer.push(oldData);
-
-      // update current bed info
-      patient.occupiedBedId = newBedId;
-      patient.bed = newBed;
-
-      await patient.save();
-
-      return res.status(200).json({
-        message: "Patient transferred successfully (Bed Change)",
-        patient,
-      });
-    }
-
-    // DEPARTMENT / CONSULTANT CHANGE
-    if (transferType === "Department/Consultant") {
-      // save old department and consultant info
-      const oldData = {
-        previousDepartment: patient.department,
-        previousDepartmentId: patient.departmentId,
-        previousPrimaryConsultant: patient.primaryConsultant,
-        previousPrimaryConsultantId: patient.primaryConsultantId,
-        previousSecondaryConsultant: patient.secondaryConsultant,
-        previousSecondaryConsultantId: patient.secondaryConsultantId,
-        transferDate: transferData.transferDate,
-        transferTime: transferData.transferTime,
-        transferReason: transferData.transferReason,
-        transferType,
-        createdAt: new Date(),
-      };
-
-      // push old data to transfer array
-      patient.transfer.push(oldData);
-
-      // update patient with new values
-      patient.department = transferData.department;
-      patient.departmentId = transferData.departmentId;
-      patient.primaryConsultant = `${transferData?.primaryConsultant?.basicDetails?.firstName}  ${transferData?.primaryConsultant?.basicDetails?.lastName}`;
-      patient.primaryConsultantId = transferData.primaryConsultant._id;
-      patient.secondaryConsultant = `${transferData?.secondaryConsultant?.basicDetails?.firstName}  ${transferData?.secondaryConsultant?.basicDetails?.lastName}`;
-      patient.secondaryConsultantId = transferData.secondaryConsultant._id;
-
-      await patient.save();
-
-      return res.status(200).json({
-        message: "Patient transferred successfully (Department/Consultant)",
-        patient,
-      });
-    }
-
-    // fallback: other types
-    patient.transfer.push({
-      transferType,
-      ...transferData,
-      createdAt: new Date(),
-    });
-
-    await patient.save();
-    return res.status(200).json({
-      message: "Patient transfer record saved",
-      patient,
-    });
-  } catch (error) {
-    console.error("Error in transferPatient:", error);
-    return res.status(500).json({
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-};
-
 module.exports = {
   dischargePatient,
   CreateRegistrationDetail,
@@ -358,5 +261,4 @@ module.exports = {
   updateRegistation,
   getUhidAndRegNo,
   findBedPatient,
-  transferPatient,
 };
