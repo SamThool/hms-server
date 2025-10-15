@@ -2148,7 +2148,6 @@ const GetpersonalHistorybypatientId = async (req, res) => {
 const deleteLifeStyleByIds = async (req, res) => {
   try {
     const { ids } = req.body;
-
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res
         .status(httpStatus.BAD_REQUEST)
@@ -4940,19 +4939,20 @@ const deleteObstetricHistoryByIds = async (req, res) => {
     const { ids } = req.body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      
       return res
         .status(httpStatus.BAD_REQUEST)
         .json({ msg: "Invalid or missing IDs array" });
     }
 
     const objectIdArray = ids.map((id) => id.toString());
-
     const result = await ObstetricHistoryModel.deleteMany({
       _id: { $in: objectIdArray },
       delete: false,
     });
 
     if (result.deletedCount === 0) {
+ 
       return res
         .status(httpStatus.NOT_FOUND)
         .json({ msg: "No Lifestyle found with the provided IDs" });
@@ -4961,13 +4961,16 @@ const deleteObstetricHistoryByIds = async (req, res) => {
     res
       .status(httpStatus.OK)
       .json({ msg: "Lifestyle deleted successfully", result });
+
   } catch (err) {
+    
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
       error: "Error in deleting Lifestyle",
       details: err.message,
     });
   }
 };
+
 
 const GetMostUsedObstetricHistory = async (req, res) => {
   try {

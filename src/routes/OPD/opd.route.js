@@ -603,7 +603,7 @@ opdRouter.put(
 opdRouter.delete(
   "/obstetric-history",
   handleToken,
-  opdController.deleteLifeStyleByIds
+  opdController.deleteObstetricHistoryByIds
 );
 opdRouter.get(
   "/obstetric-history/most-used/:id",
