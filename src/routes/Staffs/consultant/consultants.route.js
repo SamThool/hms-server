@@ -38,6 +38,7 @@ consultantsRouter.post('/import', handleToken, consultantsController.bulkImport)
 
 consultantsRouter.get('/', handleToken, consultantsController.getAllConsultants);
 
+consultantsRouter.get('/me', handleToken, consultantsController.getConsultantProfile);
 consultantsRouter.get('/:id', handleToken, consultantsController.getConsultantById);
 consultantsRouter.get('/department/:id', handleToken, consultantsController.getConsultantByDepartment);
 consultantsRouter.put('/:id', handleToken, consultantsController.updateConsultantById);

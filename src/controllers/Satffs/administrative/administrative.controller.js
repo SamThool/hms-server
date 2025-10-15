@@ -489,6 +489,32 @@ const getAdministrativeById = async (req, res) => {
   }
 }
 
+// Get logged-in user's full administrative profile
+const getMyAdministrativeProfile = async (req, res) => {
+  try {
+    // branchId is set in token at login as the refId of the logged-in admin
+    const { branchId } = req.user || {};
+    if (!branchId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const administrativeData = await Administrative.findOne({ _id: branchId, delete: false })
+      .populate({ path: 'employmentDetails.departmentOrSpeciality', select: 'departmentName' })
+      .populate({ path: 'employmentDetails.designation', select: 'designationName' })
+      .populate({ path: 'employmentDetails.empRole', select: 'roleName name' })
+      .populate({ path: 'employmentDetails.reportTo', select: 'basicDetails.firstName basicDetails.lastName' });
+
+    if (!administrativeData) {
+      return res.status(404).json({ success: false, message: 'Profile not found' });
+    }
+
+    return res.status(200).json({ success: true, data: administrativeData });
+  } catch (error) {
+    console.error('Error fetching my administrative profile:', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
 const getAdministrativeForReportTo = async (req, res) => {
   try {
     const administrativeData = await Administrative.find(
@@ -621,6 +647,7 @@ module.exports = {
   updateSystemRights,
   getAllAdministrativeData,
   getAdministrativeById,
+  getMyAdministrativeProfile,
   getAdministrativeForReportTo,
   generateEmpCode,
   deleteAdministrative

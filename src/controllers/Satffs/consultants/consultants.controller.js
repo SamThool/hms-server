@@ -1,9 +1,13 @@
-const { ConsultantModel, EmployeeModel,Consultant } = require("../../../models");
+const {
+  ConsultantModel,
+  EmployeeModel,
+  Consultant,
+} = require("../../../models");
 const { AdminModel } = require("../../../models");
 const { RoleModel } = require("../../../models");
 const { OPDMenuModel } = require("../../../models");
 const consultantValidation = require("../../../validations/Staffs/consultants/consultants.validations");
-const consultantsController = require('../../../controllers/Satffs/consultants/consultants.controller');
+const consultantsController = require("../../../controllers/Satffs/consultants/consultants.controller");
 const httpStatus = require("http-status");
 // const axios = require('axios');
 const bcrypt = require("bcrypt");
@@ -441,29 +445,28 @@ const getConsultantByDepartment = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.adminId;
 
-    console.log("Searching for department ID:", new mongoose.Types.ObjectId(id));
+    console.log(
+      "Searching for department ID:",
+      new mongoose.Types.ObjectId(id)
+    );
 
     const consultant = await Consultant.find({
-      "employmentDetails.departmentOrSpeciality": new mongoose.Types.ObjectId(id),
-    //  "basicDetails.user": new mongoose.Types.ObjectId(userId), // assuming it's an ObjectId
-    }).populate("employmentDetails.departmentOrSpeciality","departmentName");
+      "employmentDetails.departmentOrSpeciality": new mongoose.Types.ObjectId(
+        id
+      ),
+      //  "basicDetails.user": new mongoose.Types.ObjectId(userId), // assuming it's an ObjectId
+    }).populate("employmentDetails.departmentOrSpeciality", "departmentName");
 
     if (!consultant) {
-      return res
-        .status(404)
-        .json({ msg: "Consultant not found!!" });
+      return res.status(404).json({ msg: "Consultant not found!!" });
     }
 
     return res.status(200).json({ data: consultant });
   } catch (error) {
-    console.error("Error fetching consultant by department:"  , error);
-    return res
-      .status(500)
-      .json({ msg: "Internal server error!!" });
+    console.error("Error fetching consultant by department:", error);
+    return res.status(500).json({ msg: "Internal server error!!" });
   }
 };
-
-
 
 const markConsultantAsDeleted = async (req, res) => {
   try {
@@ -579,7 +582,6 @@ const bulkImport = async (req, res) => {
   }
 };
 
-
 const createSystemRights = async (req, res) => {
   console.log("createSystemRights called>>>>>>", req.body);
   const { id } = req.params; // Extract the ID from the request parameters
@@ -632,7 +634,6 @@ const createSystemRights = async (req, res) => {
     // Save the updated record
     await existingRecord.save();
     emitRightsUpdated(existingRecord._id); // Emit the event to notify the user about rights update
-  
 
     return res.status(200).json({
       success: true,
@@ -644,7 +645,85 @@ const createSystemRights = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to update system rights",
-      error: error.message,aa
+      error: error.message,
+      aa,
+    });
+  }
+};
+
+const getConsultantProfile = async (req, res) => {
+  try {
+    // Get the consultant ID from the admin record
+    const adminUser = await AdminModel.findOne({ _id: req.user.adminId });
+
+    if (!adminUser || !adminUser.refId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    const userId = adminUser.refId;
+
+    // Find consultant by ID with all populated fields
+    const consultantData = await Consultant.findOne({
+      _id: userId,
+      delete: false,
+    })
+      .populate({
+        path: "basicDetails.prefix",
+        select: "prefix",
+      })
+      .populate({
+        path: "employmentDetails.departmentOrSpeciality",
+        select: "departmentName",
+      })
+      .populate({
+        path: "employmentDetails.designation",
+        select: "designationName",
+      })
+      .populate({
+        path: "employmentDetails.empRole",
+        select: "name roleName",
+      })
+      .populate({
+        path: "employmentDetails.reportTo",
+        populate: {
+          path: "basicDetails",
+          select: "firstName lastName",
+        },
+      })
+      .populate("qualification.diploma")
+      .populate("qualification.graduation")
+      .populate("qualification.postGraduation")
+      .populate("qualification.superSpecialization")
+      .populate({
+        path: "additionalDetails.verifiedBy",
+        select:
+          "name basicDetails.firstName basicDetails.lastName basicDetails.prefix",
+      })
+
+      .lean();
+
+    if (!consultantData) {
+      return res.status(404).json({
+        success: false,
+        message: "Consultant profile not found",
+      });
+    }
+
+    // Return the data in the same format as administrative/me
+    return res.status(200).json({
+      success: true,
+      data: consultantData,
+      message: "Consultant profile fetched successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching consultant profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load profile",
+      error: error.message,
     });
   }
 };
@@ -658,6 +737,6 @@ module.exports = {
   updateUploadedDocuments,
   bulkImport,
   getConsultantByDepartment,
-  createSystemRights
+  createSystemRights,
+  getConsultantProfile, // ADD THIS LINE
 };
-

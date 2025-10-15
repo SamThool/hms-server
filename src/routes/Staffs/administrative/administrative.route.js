@@ -63,6 +63,8 @@ AdministrativeRouter.put(
 )
 
 AdministrativeRouter.get('/', AdministrativeController.getAllAdministrativeData)
+// current logged-in user's profile
+AdministrativeRouter.get('/me', handleToken, AdministrativeController.getMyAdministrativeProfile)
 AdministrativeRouter.get('/:id', AdministrativeController.getAdministrativeById)
 AdministrativeRouter.get(
   '/administrativeData/reportTo',

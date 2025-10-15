@@ -222,5 +222,5 @@ module.exports = {
   CreateRegistrationDetail,
   getAllRegisteration,
   updateRegistation,
-  getUhidAndRegNo
+  getUhidAndRegNo,
 };
